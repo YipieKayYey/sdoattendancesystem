@@ -146,8 +146,14 @@ class AttendeeSeeder extends Seeder
 
         $allAttendees = array_merge($teachingAttendees, $nonTeachingAttendees);
 
-        // Create attendees for each seminar
+        // Create attendees for each seminar (excluding legacy 1st Division seminar)
         foreach ($seminars as $seminar) {
+            // Skip the 1st Division Management Committee seminar (legacy data)
+            if ($seminar->id === 5) {
+                $this->command->info('Skipping attendees for legacy seminar: ' . $seminar->title);
+                continue;
+            }
+            
             foreach ($allAttendees as $index => $attendeeData) {
                 // Generate unique ticket hash
                 do {

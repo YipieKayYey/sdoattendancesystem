@@ -6,6 +6,8 @@ use App\Models\Seminar;
 use App\Services\RegistrationSheetPdfService;
 use App\Services\AttendanceSheetPdfService;
 use App\Services\AttendanceCsvService;
+use App\Services\AnalyticsPdfService;
+use App\Services\AnalyticsCsvService;
 use Illuminate\Support\Facades\Route;
 use Milon\Barcode\DNS2D;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -68,4 +70,15 @@ Route::middleware(['auth'])->group(function () {
         $attendeeIds = request()->query('attendee_ids');
         return $service->generateAttendanceCsv($seminar, $attendeeIds);
     })->name('seminars.export-attendance-csv');
+
+    // Analytics Export Routes
+    Route::get('/admin/analytics/{seminar}/export-pdf', function (Seminar $seminar) {
+        $service = app(AnalyticsPdfService::class);
+        return $service->generateAnalyticsReport($seminar);
+    })->name('analytics.export-pdf');
+
+    Route::get('/admin/analytics/{seminar}/export-csv', function (Seminar $seminar) {
+        $service = app(AnalyticsCsvService::class);
+        return $service->generateAnalyticsCsv($seminar);
+    })->name('analytics.export-csv');
 });

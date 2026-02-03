@@ -12,12 +12,26 @@
                         </div>
                         <!-- Title and Date -->
                         <div class="flex-1 text-center sm:text-left">
-                            <h1 class="text-2xl sm:text-3xl font-bold mb-2 break-words">{{ $seminar->title }}</h1>
+                            <h1 class="text-2xl sm:text-3xl font-bold mb-2 break-words">
+                                {{ $seminar->title }}
+                            </h1>
                             <div class="flex items-center justify-center sm:justify-start gap-2 sm:gap-4 text-blue-100">
                                 <svg class="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                <span class="font-medium text-sm sm:text-base">{{ $seminar->date->format('F j, Y') }}</span>
+                                <span class="font-medium text-sm sm:text-base">
+                                    @if($seminar->isMultiDay())
+                                        {{ $seminar->days->map(function($day) { return $day->date->format('F j'); })->implode(', ') }}, {{ $seminar->days->first()->date->format('Y') }}
+                                    @else
+                                        {{ $seminar->date->format('F j, Y') }}
+                                        @if($seminar->time)
+                                            @ {{ $seminar->formatted_time }}
+                                        @endif
+                                        @if($seminar->venue)
+                                            • {{ $seminar->venue }}
+                                        @endif
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -62,6 +76,37 @@
                                 </span>
                             </div>
                         </div>
+
+                        <!-- Multi-Day Seminar Information -->
+                        @if($seminar->isMultiDay())
+                            <div class="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                <div class="flex items-center mb-3">
+                                    <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <h3 class="text-purple-800 font-semibold text-lg">Multi-Day Seminar</h3>
+                                </div>
+                                <div class="space-y-2">
+                                    @foreach($seminar->days as $day)
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-purple-100">
+                                            <span class="text-purple-700 font-medium">
+                                                <span class="font-bold">Day {{ $day->day_number }}:</span> 
+                                                {{ $day->formatted_date }}
+                                                @if($day->start_time)
+                                                    <span class="text-sm text-purple-600">({{ $day->formatted_time }})</span>
+                                                @endif
+                                            </span>
+                                            @if($day->venue)
+                                                <span class="text-sm text-purple-600">{{ $day->venue }}</span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <p class="text-sm text-purple-600 mt-3">
+                                    <strong>Note:</strong> This registration covers all days of the multi-day seminar.
+                                </p>
+                            </div>
+                        @endif
 
                         <!-- Step Indicator -->
                         <div class="mb-6">

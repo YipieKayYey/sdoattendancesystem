@@ -52,36 +52,134 @@ class ViewSeminar extends ViewRecord
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('title')
-                    ->disabled(),
-                Forms\Components\TextInput::make('slug')
-                        ->label('URL for Pre-Registration')
-                        ->disabled(),
-                Forms\Components\DatePicker::make('date')
-                    ->disabled(),
-                Forms\Components\Toggle::make('is_open')
-                    ->label('Open Seminar (Unlimited Capacity)')
-                    ->disabled(),
-                Forms\Components\TextInput::make('capacity')
-                    ->label('Capacity')
-                    ->disabled(),
-                Forms\Components\TextInput::make('registration_url')
-                    ->label('Registration URL')
-                    ->disabled()
-                    ->suffixAction(
-                        Forms\Components\Actions\Action::make('copy')
-                            ->icon('heroicon-o-clipboard')
-                            ->action(function () {
-                                $url = $this->record->registration_url;
-                                $this->js("navigator.clipboard.writeText('{$url}')");
-                                Notification::make()
-                                    ->title('Registration URL copied!')
-                                    ->body($url)
-                                    ->success()
-                                    ->send();
-                            })
-                    )
-                    ->helperText('Click the clipboard icon to copy the registration URL. You can also select and copy the text manually.'),
+                // Seminar Information Section
+                Forms\Components\Section::make('Seminar Information')
+                    ->schema([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('title')
+                                    ->label('Seminar Title')
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                                Forms\Components\TextInput::make('slug')
+                                    ->label('URL for Pre-Registration')
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                                Forms\Components\DatePicker::make('date')
+                                    ->label('Primary Date')
+                                    ->disabled(),
+                                Forms\Components\Toggle::make('is_multi_day')
+                                    ->label('Multi-Day Seminar')
+                                    ->disabled(),
+                                Forms\Components\Toggle::make('is_open')
+                                    ->label('Open Seminar (Unlimited Capacity)')
+                                    ->disabled(),
+                                Forms\Components\TextInput::make('capacity')
+                                    ->label('Capacity')
+                                    ->disabled()
+                                    ->visible(fn ($record) => !$record->is_open),
+                                Forms\Components\Toggle::make('is_ended')
+                                    ->label('Seminar Ended')
+                                    ->disabled(),
+                            ]),
+                    ]),
+                
+                // Single Day Settings Section
+                Forms\Components\Section::make('Single Day Settings')
+                    ->schema([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('time')
+                                    ->label('Time')
+                                    ->disabled(),
+                                Forms\Components\TextInput::make('venue')
+                                    ->label('Venue')
+                                    ->disabled(),
+                                Forms\Components\Textarea::make('topic')
+                                    ->label('Topic/s')
+                                    ->rows(3)
+                                    ->disabled(),
+                                Forms\Components\TextInput::make('room')
+                                    ->label('Room')
+                                    ->disabled(),
+                            ]),
+                    ])
+                    ->visible(fn ($record) => !$record->is_multi_day),
+                
+                // Multi-Day Settings Section
+                Forms\Components\Section::make('Multi-Day Settings')
+                    ->schema([
+                        Forms\Components\Repeater::make('days')
+                            ->relationship('days')
+                            ->schema([
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('day_number')
+                                            ->label('Day')
+                                            ->disabled(),
+                                        Forms\Components\DatePicker::make('date')
+                                            ->label('Date')
+                                            ->disabled(),
+                                        Forms\Components\TextInput::make('start_time')
+                                            ->label('Start Time')
+                                            ->disabled(),
+                                        Forms\Components\TextInput::make('venue')
+                                            ->label('Venue')
+                                            ->disabled(),
+                                        Forms\Components\Textarea::make('topic')
+                                            ->label('Topic/s')
+                                            ->rows(2)
+                                            ->disabled(),
+                                        Forms\Components\TextInput::make('room')
+                                            ->label('Room')
+                                            ->disabled(),
+                                    ]),
+                            ])
+                            ->disabled()
+                            ->itemLabel(fn (array $state): ?string => isset($state['day_number']) ? 'Day ' . $state['day_number'] : null)
+                            ->collapsible()
+                            ->collapsed(),
+                    ])
+                    ->visible(fn ($record) => $record->is_multi_day),
+                
+                // Registration Information Section
+                Forms\Components\Section::make('Registration Information')
+                    ->schema([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('registration_url')
+                                    ->label('Registration URL')
+                                    ->disabled()
+                                    ->columnSpanFull()
+                                    ->suffixAction(
+                                        Forms\Components\Actions\Action::make('copy')
+                                            ->icon('heroicon-o-clipboard')
+                                            ->action(function () {
+                                                $url = $this->record->registration_url;
+                                                $this->js("navigator.clipboard.writeText('{$url}')");
+                                                Notification::make()
+                                                    ->title('Registration URL copied!')
+                                                    ->body($url)
+                                                    ->success()
+                                                    ->send();
+                                            })
+                                    )
+                                    ->helperText('Click the clipboard icon to copy the registration URL. You can also select and copy the text manually.'),
+                                Forms\Components\Placeholder::make('registered_count')
+                                    ->label('Registered Attendees')
+                                    ->content(fn ($record) => $record->attendees()->count() . ' / ' . ($record->is_open ? 'Unlimited' : $record->capacity)),
+                                Forms\Components\Placeholder::make('checked_in_count')
+                                    ->label('Checked In')
+                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_in_at')->count()),
+                                Forms\Components\Placeholder::make('checked_out_count')
+                                    ->label('Checked Out')
+                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_out_at')->count()),
+                                Forms\Components\Placeholder::make('available_spots')
+                                    ->label('Available Spots')
+                                    ->content(fn ($record) => $record->is_open ? 'Unlimited' : max(0, $record->capacity - $record->attendees()->count()))
+                                    ->visible(fn ($record) => !$record->is_open),
+                            ]),
+                    ]),
             ]);
     }
 
@@ -91,28 +189,6 @@ class ViewSeminar extends ViewRecord
             Actions\EditAction::make()
                 ->size('sm')
                 ->visible(fn () => !$this->record->trashed()),
-            Actions\Action::make('export_registration_sheet')
-                ->label('CPD Registration')
-                ->icon('heroicon-o-document-arrow-down')
-                ->color('success')
-                ->size('sm')
-                ->url(fn () => route('seminars.export-registration-sheet', $this->record))
-                ->openUrlInNewTab(),
-            Actions\Action::make('export_attendance_sheet')
-                ->label('CPD Attendance')
-                ->icon('heroicon-o-document-check')
-                ->color('info')
-                ->size('sm')
-                ->url(fn () => route('seminars.export-attendance-sheet', $this->record))
-                ->openUrlInNewTab()
-                ->visible(fn () => $this->record->attendees()->whereNotNull('checked_in_at')->exists()),
-            Actions\Action::make('export_attendance_csv')
-                ->label('Export CSV')
-                ->icon('heroicon-o-table-cells')
-                ->color('success')
-                ->size('sm')
-                ->url(fn () => route('seminars.export-attendance-csv', $this->record))
-                ->openUrlInNewTab(),
             Actions\Action::make('archive')
                 ->label('Archive')
                 ->icon('heroicon-o-archive-box')

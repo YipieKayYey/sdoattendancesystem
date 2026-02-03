@@ -16,36 +16,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed seminars and attendees
+        // Seed seminars with multi-day support
+        $this->call([
+            SeminarSeeder::class,
+        ]);
+        
+        // Seed attendees and admin users (original data)
         $this->call([
             SeminarDataSeeder::class,
+        ]);
+        
+        // Seed additional attendees for all seminars (including multi-day)
+        $this->call([
+            AttendeeSeeder::class,
         ]);
         
         // Ensure all seminars have Day 1 records (needed for multi-day support)
         $this->call([
             EnsureSeminarDaysSeeder::class,
         ]);
-
-        // If you want to also seed default admin users (in case they don't exist in SQL dump),
-        // uncomment the following:
-        /*
-        User::updateOrCreate(
-            ['email' => 'sdoadmin@example.com'],
-            [
-                'name' => 'SDO Admin',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ],
-        );
-
-        User::updateOrCreate(
-            ['email' => 'sdoadmin2@example.com'],
-            [
-                'name' => 'SDO Admin 2',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ],
-        );
-        */
     }
 }

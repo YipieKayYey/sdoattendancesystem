@@ -43,11 +43,18 @@ class EditSeminar extends EditRecord
     
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // For multi-day seminars, if date is not set, use the first day's date
-        if (!empty($data['is_multi_day']) && empty($data['date']) && !empty($data['days'])) {
-            $firstDay = $data['days'][0] ?? null;
-            if ($firstDay && !empty($firstDay['date'])) {
-                $data['date'] = $firstDay['date'];
+        // For multi-day seminars, ensure primary date syncs with Day 1
+        if (!empty($data['is_multi_day']) && !empty($data['days'])) {
+            // Find Day 1 and sync its date with primary date
+            foreach ($data['days'] as &$day) {
+                if (isset($day['day_number']) && $day['day_number'] == 1) {
+                    if (!empty($data['date'])) {
+                        $day['date'] = $data['date'];
+                    } elseif (!empty($day['date'])) {
+                        $data['date'] = $day['date'];
+                    }
+                    break;
+                }
             }
         }
         
@@ -56,8 +63,17 @@ class EditSeminar extends EditRecord
     
     protected function afterSave(): void
     {
-        // If single-day seminar and no days exist, create Day 1
         $data = $this->form->getState();
+        
+        // For multi-day seminars, ensure Day 1 date is always synced with primary date
+        if (!empty($data['is_multi_day'])) {
+            $day1 = $this->record->days()->where('day_number', 1)->first();
+            if ($day1) {
+                $day1->update(['date' => $this->record->date]);
+            }
+        }
+        
+        // If single-day seminar and no days exist, create Day 1
         if (empty($data['is_multi_day']) && $this->record->days()->count() === 0) {
             SeminarDay::create([
                 'seminar_id' => $this->record->id,

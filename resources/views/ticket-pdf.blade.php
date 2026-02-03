@@ -175,7 +175,12 @@
                 @endif
                 <div class="detail-row">
                     <span class="label">Date:</span>
-                    <span class="value">{{ $attendee->seminar->date->format('F j, Y') }}</span>
+                    <span class="value">
+                        {{ $attendee->seminar->date->format('F j, Y') }}
+                        @if(!$attendee->seminar->isMultiDay() && $attendee->seminar->time)
+                            @ {{ $attendee->seminar->formatted_time }}
+                        @endif
+                    </span>
                 </div>
                 @if($attendee->seminar->venue)
                 <div class="detail-row">

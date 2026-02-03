@@ -42,12 +42,6 @@ class AttendeesRelationManager extends RelationManager
                     });
                 })
                 ->sortable(),
-            Tables\Columns\TextColumn::make('personnel_type')
-                ->label('Type')
-                ->formatStateUsing(fn ($state) => $state === 'teaching' ? 'Teaching' : ($state === 'non_teaching' ? 'Non-Teaching' : '—'))
-                ->badge()
-                ->color(fn ($state) => $state === 'teaching' ? 'success' : ($state === 'non_teaching' ? 'gray' : null))
-                ->sortable(),
             Tables\Columns\TextColumn::make('position')
                 ->label('Position')
                 ->searchable()

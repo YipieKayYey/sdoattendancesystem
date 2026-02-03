@@ -386,4 +386,13 @@ class CheckOutAttendee extends Page implements HasForms
         $this->pendingTicketHash = null;
         $this->dayModalForm->fill(['dayId' => null]);
     }
+
+    public function backToSeminar(): void
+    {
+        if ($this->seminar) {
+            $this->redirect(\App\Filament\Admin\Resources\SeminarResource::getUrl('view', ['record' => $this->seminar->id]));
+        } else {
+            $this->redirect(\App\Filament\Admin\Resources\SeminarResource::getUrl('index'));
+        }
+    }
 }

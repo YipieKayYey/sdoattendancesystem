@@ -6,6 +6,9 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <p class="text-gray-600 dark:text-gray-300">
                         <span class="font-semibold">Date:</span> {{ $this->seminar->date->format('F j, Y') }}
+                        @if(!$this->seminar->isMultiDay() && $this->seminar->time)
+                            @ {{ $this->seminar->formatted_time }}
+                        @endif
                     </p>
                     <p class="text-gray-600 dark:text-gray-300">
                         <span class="font-semibold">Registered:</span> 
@@ -79,7 +82,7 @@
                     
                     @if($this->seminar)
                         <x-filament::button 
-                            href="{{ route('filament.admin.resources.seminars.edit', $this->seminar->id) }}"
+                            wire:click="backToSeminar"
                             variant="outline"
                             size="sm"
                         >
