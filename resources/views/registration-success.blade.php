@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration Successful</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-sky-100">
@@ -52,22 +55,63 @@
                         <div class="space-y-3 text-gray-700">
                             <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
                                 <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Name:</span>
-                                <span class="text-sm sm:text-base break-words">{{ $attendee->name }}</span>
+                                <span class="text-sm sm:text-base break-words">{{ $attendee->full_name ?: $attendee->name }}</span>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
+                                <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Personnel Type:</span>
+                                <span class="text-sm sm:text-base">
+                                    @if($attendee->personnel_type === 'teaching')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Teaching</span>
+                                    @elseif($attendee->personnel_type === 'non_teaching')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Non-Teaching</span>
+                                    @else
+                                        —
+                                    @endif
+                                </span>
                             </div>
                             <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
                                 <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Email:</span>
                                 <span class="text-sm sm:text-base break-all">{{ $attendee->email }}</span>
                             </div>
+                            @if($attendee->mobile_phone)
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
+                                <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Mobile Phone:</span>
+                                <span class="text-sm sm:text-base break-words">{{ $attendee->mobile_phone }}</span>
+                            </div>
+                            @endif
                             @if($attendee->position)
                             <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
                                 <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Position:</span>
                                 <span class="text-sm sm:text-base break-words">{{ $attendee->position }}</span>
                             </div>
                             @endif
+                            @if($attendee->isTeaching() && $attendee->prc_license_no)
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
+                                <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">PRC License No:</span>
+                                <span class="text-sm sm:text-base break-words">{{ $attendee->prc_license_no }}</span>
+                            </div>
+                            @endif
+                            @if($attendee->isTeaching() && $attendee->prc_license_expiry)
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
+                                <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">PRC Expiry Date:</span>
+                                <span class="text-sm sm:text-base break-words">{{ $attendee->prc_license_expiry->format('F j, Y') }}</span>
+                            </div>
+                            @endif
                             <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
                                 <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Ticket Code:</span>
                                 <code class="bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-mono border border-blue-300 text-blue-700 break-all">{{ $attendee->ticket_hash }}</code>
                             </div>
+                            @if($attendee->hasSignature())
+                            <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 pb-3 border-b border-blue-200 last:border-b-0 last:pb-0">
+                                <span class="font-semibold text-sm sm:text-base min-w-[80px] sm:min-w-[100px]">Signature:</span>
+                                <div class="flex-1">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-2">✓ Captured</span>
+                                    @if($attendee->signature_timestamp)
+                                    <p class="text-xs text-gray-600 mt-1">Signed on {{ $attendee->signature_timestamp->format('F j, Y g:i A') }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
 

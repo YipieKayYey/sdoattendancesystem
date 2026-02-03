@@ -143,22 +143,46 @@
             <div class="ticket-details">
                 <div class="detail-row">
                     <span class="label">Name:</span>
-                    <span class="value">{{ $attendee->name }}</span>
+                    <span class="value">{{ $attendee->full_name ?: $attendee->name }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Email:</span>
                     <span class="value">{{ $attendee->email }}</span>
                 </div>
+                @if($attendee->mobile_phone)
+                <div class="detail-row">
+                    <span class="label">Mobile Phone:</span>
+                    <span class="value">{{ $attendee->mobile_phone }}</span>
+                </div>
+                @endif
                 @if($attendee->position)
                 <div class="detail-row">
                     <span class="label">Position:</span>
                     <span class="value">{{ $attendee->position }}</span>
                 </div>
                 @endif
+                @if($attendee->isTeaching() && $attendee->prc_license_no)
+                <div class="detail-row">
+                    <span class="label">PRC License No:</span>
+                    <span class="value">{{ $attendee->prc_license_no }}</span>
+                </div>
+                @endif
+                @if($attendee->isTeaching() && $attendee->prc_license_expiry)
+                <div class="detail-row">
+                    <span class="label">PRC Expiry:</span>
+                    <span class="value">{{ $attendee->prc_license_expiry->format('d/m/Y') }}</span>
+                </div>
+                @endif
                 <div class="detail-row">
                     <span class="label">Date:</span>
                     <span class="value">{{ $attendee->seminar->date->format('F j, Y') }}</span>
                 </div>
+                @if($attendee->seminar->venue)
+                <div class="detail-row">
+                    <span class="label">Venue:</span>
+                    <span class="value">{{ $attendee->seminar->venue }}</span>
+                </div>
+                @endif
                 <div class="detail-row">
                     <span class="label">Ticket Number:</span>
                     <span class="ticket-number">{{ $attendee->ticket_hash }}</span>

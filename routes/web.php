@@ -2,6 +2,10 @@
 
 use App\Livewire\RegisterAttendee;
 use App\Models\Attendee;
+use App\Models\Seminar;
+use App\Services\RegistrationSheetPdfService;
+use App\Services\AttendanceSheetPdfService;
+use App\Services\AttendanceCsvService;
 use Illuminate\Support\Facades\Route;
 use Milon\Barcode\DNS2D;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -43,3 +47,25 @@ Route::get('/ticket/{ticket_hash}/download', function (string $ticket_hash) {
     
     return $pdf->download('ticket-' . $ticket_hash . '.pdf');
 })->name('ticket.download');
+
+// PDF Export Routes (Protected by Filament auth middleware)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/seminars/{seminar}/export-registration-sheet', function (Seminar $seminar) {
+        $service = app(RegistrationSheetPdfService::class);
+        $attendeeIds = request()->query('attendee_ids');
+        $blankSignatures = request()->query('blank_signatures') === '1';
+        return $service->generateRegistrationSheet($seminar, $attendeeIds, $blankSignatures);
+    })->name('seminars.export-registration-sheet');
+
+    Route::get('/admin/seminars/{seminar}/export-attendance-sheet', function (Seminar $seminar) {
+        $service = app(AttendanceSheetPdfService::class);
+        $attendeeIds = request()->query('attendee_ids');
+        return $service->generateAttendanceSheet($seminar, $attendeeIds);
+    })->name('seminars.export-attendance-sheet');
+
+    Route::get('/admin/seminars/{seminar}/export-attendance-csv', function (Seminar $seminar) {
+        $service = app(AttendanceCsvService::class);
+        $attendeeIds = request()->query('attendee_ids');
+        return $service->generateAttendanceCsv($seminar, $attendeeIds);
+    })->name('seminars.export-attendance-csv');
+});

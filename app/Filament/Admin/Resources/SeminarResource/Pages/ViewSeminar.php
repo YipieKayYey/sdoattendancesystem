@@ -20,6 +20,31 @@ class ViewSeminar extends ViewRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['registration_url'] = $this->record->registration_url;
+        
+        // CRITICAL: Prevent any Carbon parsing of time field
+        // Get raw value directly from database to avoid any casting
+        $rawTime = $this->record->getRawOriginal('time');
+        
+        if ($rawTime) {
+            $rawTime = trim((string)$rawTime);
+            // Reject date formats immediately
+            if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}/', $rawTime) || preg_match('/^\d{4}-\d{2}-\d{2}/', $rawTime)) {
+                $data['time'] = null;
+            }
+            // Extract HH:MM from HH:MM:SS
+            elseif (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $rawTime, $matches)) {
+                $data['time'] = sprintf('%02d:%02d', $matches[1], $matches[2]);
+            }
+            // Validate it's a time format
+            elseif (preg_match('/^(\d{1,2}):(\d{2})$/', $rawTime)) {
+                $data['time'] = $rawTime;
+            } else {
+                $data['time'] = null;
+            }
+        } else {
+            $data['time'] = null;
+        }
+        
         return $data;
     }
 
@@ -29,7 +54,7 @@ class ViewSeminar extends ViewRecord
             ->schema([
                 Forms\Components\TextInput::make('title')
                     ->disabled(),
-                    Forms\Components\TextInput::make('slug')
+                Forms\Components\TextInput::make('slug')
                         ->label('URL for Pre-Registration')
                         ->disabled(),
                 Forms\Components\DatePicker::make('date')
@@ -64,11 +89,35 @@ class ViewSeminar extends ViewRecord
     {
         return [
             Actions\EditAction::make()
+                ->size('sm')
                 ->visible(fn () => !$this->record->trashed()),
+            Actions\Action::make('export_registration_sheet')
+                ->label('CPD Registration')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('success')
+                ->size('sm')
+                ->url(fn () => route('seminars.export-registration-sheet', $this->record))
+                ->openUrlInNewTab(),
+            Actions\Action::make('export_attendance_sheet')
+                ->label('CPD Attendance')
+                ->icon('heroicon-o-document-check')
+                ->color('info')
+                ->size('sm')
+                ->url(fn () => route('seminars.export-attendance-sheet', $this->record))
+                ->openUrlInNewTab()
+                ->visible(fn () => $this->record->attendees()->whereNotNull('checked_in_at')->exists()),
+            Actions\Action::make('export_attendance_csv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-table-cells')
+                ->color('success')
+                ->size('sm')
+                ->url(fn () => route('seminars.export-attendance-csv', $this->record))
+                ->openUrlInNewTab(),
             Actions\Action::make('archive')
                 ->label('Archive')
                 ->icon('heroicon-o-archive-box')
                 ->color('warning')
+                ->size('sm')
                 ->visible(fn () => !$this->record->trashed())
                 ->requiresConfirmation()
                 ->action(function () {
@@ -84,6 +133,7 @@ class ViewSeminar extends ViewRecord
                 ->label('Restore')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('success')
+                ->size('sm')
                 ->visible(fn () => $this->record->trashed())
                 ->requiresConfirmation()
                 ->action(function () {

@@ -41,6 +41,18 @@ class ArchivedSeminarResource extends Resource
                     ->disabled(),
                 Forms\Components\DatePicker::make('date')
                     ->disabled(),
+                Forms\Components\TextInput::make('venue')
+                    ->label('Venue')
+                    ->disabled(),
+                Forms\Components\Textarea::make('topic')
+                    ->label('Topic/s')
+                    ->disabled(),
+                Forms\Components\TextInput::make('time')
+                    ->label('Time')
+                    ->disabled(),
+                Forms\Components\TextInput::make('room')
+                    ->label('Room')
+                    ->disabled(),
                 Forms\Components\Toggle::make('is_open')
                     ->label('Open Seminar (Unlimited Capacity)')
                     ->disabled(),

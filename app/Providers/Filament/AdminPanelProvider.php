@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->brandLogo(asset('images/sdologo.png'))
             ->brandLogoHeight('5rem')
+            ->favicon(asset('favicon.ico'))
             ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Sky,

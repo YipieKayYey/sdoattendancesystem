@@ -15,21 +15,21 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
 
-class CheckInAttendee extends Page implements HasForms
+class CheckOutAttendee extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-qr-code';
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-right-on-rectangle';
     
-    protected static ?string $navigationLabel = 'Check In';
+    protected static ?string $navigationLabel = 'Check Out';
 
-    protected static string $view = 'filament.admin.pages.check-in-attendee';
+    protected static string $view = 'filament.admin.pages.check-out-attendee';
     
     protected static bool $shouldRegisterNavigation = false; // Hide from main navigation, only accessible via seminar
     
     public ?Seminar $seminar = null;
-    public ?Attendee $lastCheckedIn = null;
-    public ?AttendeeCheckIn $lastCheckInRecord = null;
+    public ?Attendee $lastCheckedOut = null;
+    public ?AttendeeCheckIn $lastCheckOutRecord = null;
     public string $ticketHash = '';
     public ?int $selectedDayId = null;
     public ?SeminarDay $currentDay = null;
@@ -75,8 +75,8 @@ class CheckInAttendee extends Page implements HasForms
     public function getTitle(): string | Htmlable
     {
         return $this->seminar 
-            ? "Check In - {$this->seminar->title}"
-            : 'Check In Attendee';
+            ? "Check Out - {$this->seminar->title}"
+            : 'Check Out Attendee';
     }
 
     protected function getFormSchema(): array
@@ -89,7 +89,7 @@ class CheckInAttendee extends Page implements HasForms
                 ->autofocus()
                 ->live()
                 ->extraAttributes([
-                    'x-on:keydown.enter' => '$wire.checkIn()',
+                    'x-on:keydown.enter' => '$wire.checkOut()',
                 ]),
         ];
     }
@@ -112,13 +112,13 @@ class CheckInAttendee extends Page implements HasForms
         
         return [
             Select::make('dayId')
-                ->label('Select Day for Check-In')
+                ->label('Select Day for Check-Out')
                 ->options($dayOptions)
                 ->default($this->selectedDayId ?? $this->currentDay?->id)
                 ->required()
                 ->live()
                 ->placeholder('Choose a day...')
-                ->helperText('Select which day you are checking in this attendee for.')
+                ->helperText('Select which day you are checking out this attendee for.')
                 ->searchable(false)
                 ->native(false),
         ];
@@ -128,10 +128,10 @@ class CheckInAttendee extends Page implements HasForms
     {
         $this->ticketHash = $hash;
         $this->form->fill(['ticketHash' => $hash]);
-        $this->checkIn();
+        $this->checkOut();
     }
 
-    public function checkIn(): void
+    public function checkOut(): void
     {
         // Get ticket hash from form state or property
         $data = $this->form->getState();
@@ -147,11 +147,11 @@ class CheckInAttendee extends Page implements HasForms
             }
         }
         
-        // Proceed with check-in
-        $this->proceedWithCheckIn($ticketHash);
+        // Proceed with check-out
+        $this->proceedWithCheckOut($ticketHash);
     }
 
-    public function proceedWithCheckIn(?string $ticketHash = null): void
+    public function proceedWithCheckOut(?string $ticketHash = null): void
     {
         // Use pending ticket hash if available, otherwise use parameter or form state
         $ticketHash = $ticketHash ?? $this->pendingTicketHash ?? $this->form->getState()['ticketHash'] ?? $this->ticketHash;
@@ -195,7 +195,7 @@ class CheckInAttendee extends Page implements HasForms
             return;
         }
 
-        // Determine which day to check in for
+        // Determine which day to check out for
         $seminarDay = null;
         if ($this->seminar) {
             // Re-check query parameter if selectedDayId is not set (in case it was lost)
@@ -233,90 +233,124 @@ class CheckInAttendee extends Page implements HasForms
                 return;
             }
             
-            // If a day is selected, use per-day check-in records
             if ($seminarDay) {
-                // Check if already checked in for this day
-                $existingCheckIn = AttendeeCheckIn::where('attendee_id', $attendee->id)
+                // Find check-in record for this day
+                $checkIn = AttendeeCheckIn::where('attendee_id', $attendee->id)
                     ->where('seminar_day_id', $seminarDay->id)
-                    ->whereNotNull('checked_in_at')
                     ->first();
                 
-                if ($existingCheckIn) {
+                if (!$checkIn || !$checkIn->checked_in_at) {
                     Notification::make()
-                        ->title('Already checked in')
-                        ->body("This attendee was already checked in for Day {$seminarDay->day_number} at {$existingCheckIn->checked_in_at->format('M j, Y g:i A')}.")
+                        ->title('Not checked in')
+                        ->body("This attendee must be checked in for Day {$seminarDay->day_number} before checking out.")
                         ->warning()
                         ->send();
-                    $this->lastCheckedIn = $attendee;
-                    $this->lastCheckInRecord = $existingCheckIn;
+                    $this->lastCheckedOut = $attendee;
                     $this->ticketHash = '';
                     $this->form->fill(['ticketHash' => '']);
                     return;
                 }
                 
-                // Create or update check-in record for this day
-                $checkIn = AttendeeCheckIn::firstOrNew([
-                    'attendee_id' => $attendee->id,
-                    'seminar_day_id' => $seminarDay->id,
-                ]);
-                $checkIn->checked_in_at = now();
+                if ($checkIn->checked_out_at) {
+                    Notification::make()
+                        ->title('Already checked out')
+                        ->body("This attendee was already checked out for Day {$seminarDay->day_number} at {$checkIn->checked_out_at->format('M j, Y g:i A')}.")
+                        ->warning()
+                        ->send();
+                    $this->lastCheckedOut = $attendee;
+                    $this->ticketHash = '';
+                    $this->form->fill(['ticketHash' => '']);
+                    return;
+                }
+                
+                // Update check-out
+                $checkIn->checked_out_at = now();
                 $checkIn->save();
                 
-                // Store the check-in record for display
-                $this->lastCheckInRecord = $checkIn;
+                // Store the check-out record for display
+                $this->lastCheckOutRecord = $checkIn;
                 
-                // Update attendee's checked_in_at for backward compatibility (latest check-in)
-                $latestCheckIn = $attendee->checkIns()->whereNotNull('checked_in_at')->latest('checked_in_at')->first();
-                if ($latestCheckIn) {
-                    $attendee->update(['checked_in_at' => $latestCheckIn->checked_in_at]);
+                // Update attendee's checked_out_at for backward compatibility (latest check-out)
+                $latestCheckOut = $attendee->checkIns()->whereNotNull('checked_out_at')->latest('checked_out_at')->first();
+                if ($latestCheckOut) {
+                    $attendee->update(['checked_out_at' => $latestCheckOut->checked_out_at]);
                 }
                 
                 $dayInfo = "Day {$seminarDay->day_number}";
+                $checkInTime = $checkIn->checked_in_at->format('M j, Y g:i A');
+                $duration = $checkIn->checked_in_at->diffForHumans($checkIn->checked_out_at, true);
             } else {
                 // No day selected and seminar has only one day -> fall back to attendee columns
-                if ($attendee->checked_in_at !== null) {
+                if ($attendee->checked_out_at !== null) {
                     Notification::make()
-                        ->title('Already checked in')
-                        ->body("This attendee was already checked in at {$attendee->checked_in_at->format('M j, Y g:i A')}.")
+                        ->title('Already checked out')
+                        ->body("This attendee was already checked out at {$attendee->checked_out_at->format('M j, Y g:i A')}.")
                         ->warning()
                         ->send();
-                    $this->lastCheckedIn = $attendee;
+                    $this->lastCheckedOut = $attendee;
                     $this->ticketHash = '';
                     $this->form->fill(['ticketHash' => '']);
                     return;
                 }
                 
-                $attendee->update(['checked_in_at' => now()]);
+                if ($attendee->checked_in_at === null) {
+                    Notification::make()
+                        ->title('Not checked in')
+                        ->body('This attendee must be checked in before checking out.')
+                        ->warning()
+                        ->send();
+                    $this->lastCheckedOut = $attendee;
+                    $this->ticketHash = '';
+                    $this->form->fill(['ticketHash' => '']);
+                    return;
+                }
+                
+                $attendee->update(['checked_out_at' => now()]);
                 $dayInfo = '';
-                $this->lastCheckInRecord = null;
+                $checkInTime = $attendee->checked_in_at->format('M j, Y g:i A');
+                $duration = $attendee->checked_in_at->diffForHumans($attendee->checked_out_at, true);
+                $this->lastCheckOutRecord = null;
             }
         } else {
-            // Single-day seminar - use old method for backward compatibility
-            if ($attendee->checked_in_at !== null) {
+            // Single-day seminar - use old method
+            if ($attendee->checked_out_at !== null) {
                 Notification::make()
-                    ->title('Already checked in')
-                    ->body("This attendee was already checked in at {$attendee->checked_in_at->format('M j, Y g:i A')}.")
+                    ->title('Already checked out')
+                    ->body("This attendee was already checked out at {$attendee->checked_out_at->format('M j, Y g:i A')}.")
                     ->warning()
                     ->send();
-                $this->lastCheckedIn = $attendee;
+                $this->lastCheckedOut = $attendee;
                 $this->ticketHash = '';
                 $this->form->fill(['ticketHash' => '']);
                 return;
             }
             
-            $attendee->update(['checked_in_at' => now()]);
+            if ($attendee->checked_in_at === null) {
+                Notification::make()
+                    ->title('Not checked in')
+                    ->body('This attendee must be checked in before checking out.')
+                    ->warning()
+                    ->send();
+                $this->lastCheckedOut = $attendee;
+                $this->ticketHash = '';
+                $this->form->fill(['ticketHash' => '']);
+                return;
+            }
+            
+            $attendee->update(['checked_out_at' => now()]);
             $dayInfo = '';
-            $this->lastCheckInRecord = null; // Single-day doesn't use check-in records
+            $checkInTime = $attendee->checked_in_at->format('M j, Y g:i A');
+            $duration = $attendee->checked_in_at->diffForHumans($attendee->checked_out_at, true);
+            $this->lastCheckOutRecord = null; // Single-day doesn't use check-in records
         }
         
-        $this->lastCheckedIn = $attendee;
+        $this->lastCheckedOut = $attendee;
         $name = $attendee->full_name ?: $attendee->name;
-        $signatureStatus = $attendee->hasSignature() ? ' (Signature verified)' : ' (No signature)';
         $dayText = $dayInfo ? " for {$dayInfo}" : '';
         
         Notification::make()
-            ->title('Check-in successful!')
-            ->body("{$name} has been checked in{$dayText}.{$signatureStatus}")
+            ->title('Check-out successful!')
+            ->body("{$name} has been checked out{$dayText}. (Checked in: {$checkInTime}, Duration: {$duration})")
             ->success()
             ->send();
 
@@ -325,7 +359,7 @@ class CheckInAttendee extends Page implements HasForms
         $this->form->fill(['ticketHash' => '']);
     }
 
-    public function selectDayAndCheckIn(): void
+    public function selectDayAndCheckOut(): void
     {
         $data = $this->dayModalForm->getState();
         $dayId = $data['dayId'] ?? null;
@@ -333,7 +367,7 @@ class CheckInAttendee extends Page implements HasForms
         if (!$dayId) {
             Notification::make()
                 ->title('Day selection required')
-                ->body('Please select a day before checking in.')
+                ->body('Please select a day before checking out.')
                 ->danger()
                 ->send();
             return;
@@ -342,8 +376,8 @@ class CheckInAttendee extends Page implements HasForms
         $this->selectedDayId = $dayId;
         $this->showDayModal = false;
         
-        // Proceed with check-in using the pending ticket hash
-        $this->proceedWithCheckIn();
+        // Proceed with check-out using the pending ticket hash
+        $this->proceedWithCheckOut();
     }
 
     public function closeDayModal(): void
