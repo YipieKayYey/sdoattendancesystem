@@ -132,7 +132,7 @@
             <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-lg p-6">
                 <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Last Checked Out</h3>
                 <div class="space-y-2 text-blue-800 dark:text-blue-200">
-                    <p><span class="font-semibold">Name:</span> {{ $this->lastCheckedOut->full_name ?: $this->lastCheckedOut->name }}</p>
+                    <p><span class="font-semibold">Name:</span> {{ $this->lastCheckedOut->full_name ?? $this->lastCheckedOut->name }}</p>
                     <p><span class="font-semibold">Email:</span> {{ $this->lastCheckedOut->email }}</p>
                     <p><span class="font-semibold">Personnel Type:</span> {{ $this->lastCheckedOut->personnel_type === 'teaching' ? 'Teaching' : ($this->lastCheckedOut->personnel_type === 'non_teaching' ? 'Non-Teaching' : '—') }}</p>
                     <p><span class="font-semibold">Ticket Hash:</span> <code class="bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded">{{ $this->lastCheckedOut->ticket_hash }}</code></p>

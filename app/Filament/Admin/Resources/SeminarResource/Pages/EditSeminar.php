@@ -6,7 +6,7 @@ use App\Filament\Admin\Resources\SeminarResource;
 use App\Models\SeminarDay;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class EditSeminar extends EditRecord
 {
@@ -14,28 +14,64 @@ class EditSeminar extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // CRITICAL: Prevent any Carbon parsing of time field
-        // Get raw value directly from database to avoid any casting
-        $rawTime = $this->record->getRawOriginal('time');
+        Log::info('mutateFormDataBeforeFill called for seminar ' . $this->record->id);
+        Log::info('Seminar time: ' . ($this->record->time ?? 'null'));
         
-        if ($rawTime) {
-            $rawTime = trim((string)$rawTime);
-            // Reject date formats immediately
-            if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}/', $rawTime) || preg_match('/^\d{4}-\d{2}-\d{2}/', $rawTime)) {
-                $data['time'] = null;
-            }
-            // Extract HH:MM from HH:MM:SS
-            elseif (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $rawTime, $matches)) {
-                $data['time'] = sprintf('%02d:%02d', $matches[1], $matches[2]);
-            }
-            // Validate it's a time format
-            elseif (preg_match('/^(\d{1,2}):(\d{2})$/', $rawTime)) {
-                $data['time'] = $rawTime;
+        // Handle single-day seminar time
+        if (!empty($this->record->time)) {
+            $rawTime = $this->record->time;
+            Log::info('Processing single-day time: ' . $rawTime);
+            
+            // Handle both HH:MM and HH:MM:SS formats
+            if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $rawTime, $matches)) {
+                $hour = (int)$matches[1];
+                $minute = $matches[2];
+                
+                // Convert to 12-hour format
+                $period = $hour >= 12 ? 'PM' : 'AM';
+                $displayHour = $hour > 12 ? $hour - 12 : ($hour === 0 ? 12 : $hour);
+                
+                $data['time_hour'] = $displayHour;
+                $data['time_minute'] = $minute;
+                $data['time_period'] = $period;
+                $data['time'] = substr($rawTime, 0, 5); // Store as HH:MM
+                
+                Log::info('Set time fields: hour=' . $displayHour . ', minute=' . $minute . ', period=' . $period);
             } else {
                 $data['time'] = null;
+                Log::info('Time format not matched: ' . $rawTime);
             }
         } else {
             $data['time'] = null;
+            Log::info('No seminar time found');
+        }
+        
+        // Handle multi-day seminar times
+        if (isset($data['days']) && is_array($data['days'])) {
+            foreach ($data['days'] as &$day) {
+                if (isset($day['id'])) {
+                    $seminarDay = SeminarDay::find($day['id']);
+                    $seminarDay = \App\Models\SeminarDay::find($day['id']);
+                    if ($seminarDay && $seminarDay->start_time) {
+                        $startTime = $seminarDay->start_time; // "14:30"
+                        
+                        // Handle both HH:MM and HH:MM:SS formats
+                        if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $startTime, $matches)) {
+                            $hour = (int)$matches[1];
+                            $minute = $matches[2];
+                            
+                            // Convert to 12-hour format
+                            $period = $hour >= 12 ? 'PM' : 'AM';
+                            $displayHour = $hour > 12 ? $hour - 12 : ($hour === 0 ? 12 : $hour);
+                            
+                            $day['start_time_hour'] = $displayHour;
+                            $day['start_time_minute'] = $minute;
+                            $day['start_time_period'] = $period;
+                            $day['start_time'] = substr($startTime, 0, 5); // Store as HH:MM
+                        }
+                    }
+                }
+            }
         }
         
         return $data;
@@ -48,11 +84,7 @@ class EditSeminar extends EditRecord
             // Find Day 1 and sync its date with primary date
             foreach ($data['days'] as &$day) {
                 if (isset($day['day_number']) && $day['day_number'] == 1) {
-                    if (!empty($data['date'])) {
-                        $day['date'] = $data['date'];
-                    } elseif (!empty($day['date'])) {
-                        $data['date'] = $day['date'];
-                    }
+                    $day['date'] = $data['date'];
                     break;
                 }
             }

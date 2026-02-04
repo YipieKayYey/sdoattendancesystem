@@ -8,6 +8,7 @@ use App\Services\AttendanceSheetPdfService;
 use App\Services\AttendanceCsvService;
 use App\Services\AnalyticsPdfService;
 use App\Services\AnalyticsCsvService;
+use App\Http\Controllers\RegistrationDetailsController;
 use Illuminate\Support\Facades\Route;
 use Milon\Barcode\DNS2D;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -35,6 +36,13 @@ Route::get('/registration/success/{ticket_hash}', function (string $ticket_hash)
         'barcodeImage' => $barcodeImage,
     ]);
 })->name('registration.success');
+
+// Registration Details PDF Routes
+Route::get('/registration-details/{ticket_hash}/preview', [RegistrationDetailsController::class, 'preview'])
+    ->name('registration-details.preview');
+
+Route::get('/registration-details/{ticket_hash}/download', [RegistrationDetailsController::class, 'download'])
+    ->name('registration-details.download');
 
 Route::get('/ticket/{ticket_hash}/download', function (string $ticket_hash) {
     $attendee = Attendee::where('ticket_hash', $ticket_hash)->firstOrFail();

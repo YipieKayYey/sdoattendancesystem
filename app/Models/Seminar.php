@@ -14,19 +14,20 @@ class Seminar extends Model
         'title',
         'slug',
         'date',
-        'capacity',
         'is_open',
-        'is_ended',
+        'capacity',
         'venue',
         'topic',
         'time',
         'room',
+        'is_multi_day',
     ];
 
     protected $casts = [
         'date' => 'date',
         'is_open' => 'boolean',
         'is_ended' => 'boolean',
+        'is_multi_day' => 'boolean',
         // DO NOT cast time - keep it as string to avoid Carbon parsing issues
     ];
 
@@ -40,8 +41,8 @@ class Seminar extends Model
             return;
         }
         
-        // If it's a Carbon/DateTime instance, extract time
-        if ($value instanceof \DateTime || $value instanceof \Carbon\Carbon) {
+        // Handle Carbon instance from new form fields
+        if ($value instanceof \Carbon\Carbon || $value instanceof \DateTime) {
             $this->attributes['time'] = $value->format('H:i:s');
             return;
         }
@@ -85,6 +86,23 @@ class Seminar extends Model
     /**
      * Get the time attribute - always return as string or null
      */
+    public function getFormattedTimeAttribute(): ?string
+    {
+        if (!$this->time) {
+            return null;
+        }
+        
+        // Handle both HH:MM and HH:MM:SS formats
+        $time = substr($this->time, 0, 5); // Get HH:MM part
+        [$hour, $minute] = explode(':', $time);
+        
+        // Convert to 12-hour format for display
+        $period = $hour >= 12 ? 'PM' : 'AM';
+        $displayHour = $hour > 12 ? $hour - 12 : ($hour === 0 ? 12 : $hour);
+        
+        return $displayHour . ':' . $minute . ' ' . $period;
+    }
+
     public function getTimeAttribute($value)
     {
         if (empty($value)) {
@@ -137,6 +155,12 @@ class Seminar extends Model
 
     public function isMultiDay(): bool
     {
+        // First check the database field if it exists
+        if (isset($this->attributes['is_multi_day'])) {
+            return $this->is_multi_day;
+        }
+        
+        // Fallback to counting days for backward compatibility
         return $this->days()->count() > 1;
     }
 

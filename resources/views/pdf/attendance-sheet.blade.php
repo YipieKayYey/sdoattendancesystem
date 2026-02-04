@@ -234,7 +234,7 @@
                     @foreach($attendees as $attendee)
                         <tr>
                             <td width="5%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; text-align: center;">{{ $number++ }}</td>
-                            <td width="35%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; word-wrap: break-word;">{{ $attendee->full_name ?: $attendee->name }}</td>
+                            <td width="35%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; word-wrap: break-word;">{{ $attendee->full_name ?? $attendee->name }}</td>
                             <td width="20%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; text-align: center;">
                                 @if($attendee->hasSignature() && $attendee->signature_image)
                                     <div class="signature-container">

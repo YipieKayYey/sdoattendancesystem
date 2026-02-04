@@ -31,7 +31,7 @@ class AttendeesRelationManager extends RelationManager
         $columns = [
             Tables\Columns\TextColumn::make('full_name')
                 ->label('Name')
-                ->getStateUsing(fn ($record) => $record->full_name ?: $record->name)
+                ->getStateUsing(fn ($record) => $record->full_name ?? $record->name)
                 ->searchable(query: function (Builder $query, string $search): Builder {
                     return $query->where(function ($q) use ($search) {
                         $q->where('first_name', 'like', "%{$search}%")
@@ -119,6 +119,15 @@ class AttendeesRelationManager extends RelationManager
                     ->queries(
                         true: fn ($query) => $query->whereNotNull('checked_in_at'),
                         false: fn ($query) => $query->whereNull('checked_in_at'),
+                    ),
+                Tables\Filters\TernaryFilter::make('checked_out_at')
+                    ->label('Check-out Status')
+                    ->placeholder('All attendees')
+                    ->trueLabel('Checked out')
+                    ->falseLabel('Not checked out')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('checked_out_at'),
+                        false: fn ($query) => $query->whereNull('checked_out_at'),
                     ),
             ])
             ->headerActions([

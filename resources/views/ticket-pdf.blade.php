@@ -143,7 +143,7 @@
             <div class="ticket-details">
                 <div class="detail-row">
                     <span class="label">Name:</span>
-                    <span class="value">{{ $attendee->full_name ?: $attendee->name }}</span>
+                    <span class="value">{{ $attendee->full_name ?? $attendee->name }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Email:</span>

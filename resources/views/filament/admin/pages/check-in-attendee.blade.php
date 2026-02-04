@@ -141,7 +141,7 @@
             <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/60 rounded-lg p-6">
                 <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">Last Checked In</h3>
                 <div class="space-y-2 text-green-800 dark:text-green-200">
-                    <p><span class="font-semibold">Name:</span> {{ $this->lastCheckedIn->full_name ?: $this->lastCheckedIn->name }}</p>
+                    <p><span class="font-semibold">Name:</span> {{ $this->lastCheckedIn->full_name ?? $this->lastCheckedIn->name }}</p>
                     <p><span class="font-semibold">Email:</span> {{ $this->lastCheckedIn->email }}</p>
                     <p><span class="font-semibold">Personnel Type:</span> {{ $this->lastCheckedIn->personnel_type === 'teaching' ? 'Teaching' : ($this->lastCheckedIn->personnel_type === 'non_teaching' ? 'Non-Teaching' : '—') }}</p>
                     @if($this->lastCheckedIn->hasSignature())

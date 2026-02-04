@@ -51,12 +51,26 @@ class SeminarResource extends Resource
                                     ->alphaDash()
                                     ->helperText('This will be used in the registration URL.')
                                     ->columnSpanFull(),
+                                Forms\Components\DatePicker::make('date')
+                                    ->label(fn (Get $get) => $get('is_multi_day') ? 'Primary Date (Day 1)' : 'Date')
+                                    ->required()
+                                    ->native(false)
+                                    ->helperText(fn (Get $get) => $get('is_multi_day') ? 'This date will be used for Day 1. Additional days start from Day 2.' : null)
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set, $state, Get $get) {
+                                        // Store the date for the multi-day toggle to use
+                                        $set('primary_date_for_multiday', $state);
+                                        
+                                        // For multi-day seminars, sync primary date with Day 1
+                                        if ($get('is_multi_day') && $state) {
+                                            $set('sync_primary_date_to_day1', true);
+                                        }
+                                    }),
                                 Forms\Components\Toggle::make('is_multi_day')
                                     ->label('Multi-Day Seminar')
                                     ->helperText('Enable if this seminar spans multiple days')
                                     ->live()
                                     ->default(false)
-                                    ->dehydrated(false)
                                     ->afterStateUpdated(function (Set $set, $state, Get $get) {
                                         // When multi-day is enabled, ensure Day 1 exists from primary date
                                         if ($state && $get('date')) {
@@ -89,23 +103,43 @@ class SeminarResource extends Resource
                                                 $set('days', $newDays);
                                             }
                                         }
-                                    }),
-                                Forms\Components\DatePicker::make('date')
-                                    ->label(fn (Get $get) => $get('is_multi_day') ? 'Primary Date (Day 1)' : 'Date')
-                                    ->required()
-                                    ->native(false)
-                                    ->helperText(fn (Get $get) => $get('is_multi_day') ? 'This date will be used for Day 1. Additional days start from Day 2.' : null)
-                                    ->afterStateUpdated(function (Set $set, $state, Get $get) {
-                                        // For multi-day seminars, sync primary date with Day 1
-                                        if ($get('is_multi_day') && $state) {
+                                        
+                                        // When multi-day is disabled, remove all days
+                                        if (!$state) {
+                                            $set('days', []);
+                                        }
+                                        
+                                        // Handle sync trigger from date picker
+                                        if ($get('sync_primary_date_to_day1') && $get('primary_date_for_multiday')) {
                                             $days = $get('days') ?? [];
-                                            // Update Day 1's date if it exists in the form
+                                            $primaryDate = $get('primary_date_for_multiday');
+                                            $day1Updated = false;
+                                            
                                             foreach ($days as $idx => $day) {
                                                 if (isset($day['day_number']) && $day['day_number'] == 1) {
-                                                    $set("days.{$idx}.date", $state);
+                                                    $set("days.{$idx}.date", $primaryDate);
+                                                    $day1Updated = true;
                                                     break;
                                                 }
                                             }
+                                            
+                                            if (!$day1Updated) {
+                                                $newDays = [
+                                                    [
+                                                        'day_number' => 1,
+                                                        'date' => $primaryDate,
+                                                        'start_time' => null,
+                                                        'venue' => null,
+                                                        'topic' => null,
+                                                        'room' => null,
+                                                    ],
+                                                    ...$days
+                                                ];
+                                                $set('days', $newDays);
+                                            }
+                                            
+                                            // Clear the sync trigger
+                                            $set('sync_primary_date_to_day1', false);
                                         }
                                     }),
                                 Forms\Components\Toggle::make('is_open')
@@ -139,44 +173,50 @@ class SeminarResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
-                                Forms\Components\TextInput::make('time')
-                                    ->label('Time')
-                                    ->helperText('For Attendance Sheet (Format: HH:MM, e.g., 08:00 or 13:30)')
-                                    ->placeholder('08:00')
-                                    ->maxLength(5)
-                                    ->regex('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/')
-                                    ->validationMessages([
-                                        'regex' => 'Please enter time in HH:MM format (e.g., 08:00 or 13:30)',
-                                    ])
-                                    ->afterStateHydrated(function ($component, $state) {
-                                        if ($state === null || $state === '') {
-                                            $component->state(null);
-                                            return;
-                                        }
-                                        if ($state instanceof \DateTime || $state instanceof \Carbon\Carbon) {
-                                            $component->state($state->format('H:i'));
-                                            return;
-                                        }
-                                        $timeStr = trim((string)$state);
-                                        if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}/', $timeStr) || preg_match('/^\d{4}-\d{2}-\d{2}/', $timeStr)) {
-                                            $component->state(null);
-                                            return;
-                                        }
-                                        if (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $timeStr, $matches)) {
-                                            $component->state(sprintf('%02d:%02d', $matches[1], $matches[2]));
-                                        } elseif (preg_match('/^(\d{1,2}):(\d{2})$/', $timeStr)) {
-                                            $component->state($timeStr);
-                                        } else {
-                                            $component->state(null);
-                                        }
-                                    }),
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\Select::make('time_hour')
+                                            ->label('Hour')
+                                            ->options(array_combine(range(1,12), range(1,12)))
+                                            ->required()
+                                            ->default(9),
+                                        Forms\Components\Select::make('time_minute')
+                                            ->label('Minute')
+                                            ->options([
+                                                '00' => '00',
+                                                '05' => '05',
+                                                '10' => '10',
+                                                '15' => '15',
+                                                '20' => '20',
+                                                '25' => '25',
+                                                '30' => '30',
+                                                '35' => '35',
+                                                '40' => '40',
+                                                '45' => '45',
+                                                '50' => '50',
+                                                '55' => '55',
+                                            ])
+                                            ->required()
+                                            ->default('00'),
+                                        Forms\Components\Select::make('time_period')
+                                            ->label('Period')
+                                            ->options(['AM' => 'AM', 'PM' => 'PM'])
+                                            ->required()
+                                            ->default('AM'),
+                                    ]),
                                 Forms\Components\TextInput::make('venue')
                                     ->label('Venue')
                                     ->maxLength(255),
+                            ]),
+                        Forms\Components\Grid::make(1)
+                            ->schema([
                                 Forms\Components\Textarea::make('topic')
                                     ->label('Topic/s')
                                     ->rows(3)
                                     ->helperText('For Attendance Sheet'),
+                            ]),
+                        Forms\Components\Grid::make(1)
+                            ->schema([
                                 Forms\Components\TextInput::make('room')
                                     ->label('Room')
                                     ->maxLength(255)
@@ -223,20 +263,69 @@ class SeminarResource extends Resource
                                         Forms\Components\DatePicker::make('date')
                                             ->required()
                                             ->native(false)
-                                            ->helperText(fn (Get $get) => $get('day_number') == 1 ? 'This is Day 1 - it syncs with the Primary Date above.' : null)
-                                            ->afterStateUpdated(function (Set $set, $state, Get $get, $component) {
-                                                // If this is Day 1, sync with primary date
-                                                $dayNumber = $get('day_number');
-                                                if ($dayNumber == 1 && $state) {
-                                                    $set('../../date', $state);
-                                                }
-                                            }),
-                                        Forms\Components\TextInput::make('start_time')
-                                            ->label('Start Time')
-                                            ->helperText('Format: HH:MM, e.g., 08:00')
-                                            ->placeholder('08:00')
-                                            ->maxLength(5)
-                                            ->regex('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'),
+                                            ->helperText(fn (Get $get) => 
+                                                $get('day_number') == 1 ? 'This is Day 1 - it syncs with the Primary Date above.' : null
+                                            ),
+                                        Forms\Components\Grid::make(3)
+                                            ->schema([
+                                                Forms\Components\Select::make('start_time_hour')
+                                                    ->label('Hour')
+                                                    ->options(array_combine(range(1,12), range(1,12)))
+                                                    ->required()
+                                                    ->default(9)
+                                                    ->afterStateHydrated(function ($component, $state, $record) {
+                                                        if ($record && $record->start_time) {
+                                                            $time = substr($record->start_time, 0, 5); // Get HH:MM part
+                                                            [$hour, $minute] = explode(':', $time);
+                                                            
+                                                            $period = $hour >= 12 ? 'PM' : 'AM';
+                                                            $displayHour = $hour > 12 ? $hour - 12 : ($hour === 0 ? 12 : $hour);
+                                                            
+                                                            $component->state($displayHour);
+                                                        }
+                                                    }),
+                                                Forms\Components\Select::make('start_time_minute')
+                                                    ->label('Minute')
+                                                    ->options([
+                                                        '00' => '00',
+                                                        '05' => '05',
+                                                        '10' => '10',
+                                                        '15' => '15',
+                                                        '20' => '20',
+                                                        '25' => '25',
+                                                        '30' => '30',
+                                                        '35' => '35',
+                                                        '40' => '40',
+                                                        '45' => '45',
+                                                        '50' => '50',
+                                                        '55' => '55',
+                                                    ])
+                                                    ->required()
+                                                    ->default('00')
+                                                    ->afterStateHydrated(function ($component, $state, $record) {
+                                                        if ($record && $record->start_time) {
+                                                            $time = substr($record->start_time, 0, 5); // Get HH:MM part
+                                                            [$hour, $minute] = explode(':', $time);
+                                                            
+                                                            $component->state($minute);
+                                                        }
+                                                    }),
+                                                Forms\Components\Select::make('start_time_period')
+                                                    ->label('Period')
+                                                    ->options(['AM' => 'AM', 'PM' => 'PM'])
+                                                    ->required()
+                                                    ->default('AM')
+                                                    ->afterStateHydrated(function ($component, $state, $record) {
+                                                        if ($record && $record->start_time) {
+                                                            $time = substr($record->start_time, 0, 5); // Get HH:MM part
+                                                            [$hour, $minute] = explode(':', $time);
+                                                            
+                                                            $period = $hour >= 12 ? 'PM' : 'AM';
+                                                            
+                                                            $component->state($period);
+                                                        }
+                                                    }),
+                                            ]),
                                         Forms\Components\TextInput::make('venue')
                                             ->label('Venue')
                                             ->maxLength(255),
@@ -256,6 +345,83 @@ class SeminarResource extends Resource
                     ])
                     ->visible(fn (Get $get) => $get('is_multi_day')),
             ]);
+    }
+
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        \Log::info('mutateFormDataBeforeCreate called with: ' . json_encode(array_keys($data)));
+        if (isset($data['days'])) {
+            \Log::info('Days data: ' . json_encode($data['days']));
+        }
+        return self::convertTimeFields($data);
+    }
+
+    public static function mutateFormDataBeforeUpdate(array $data): array
+    {
+        \Log::info('mutateFormDataBeforeUpdate called with: ' . json_encode(array_keys($data)));
+        if (isset($data['days'])) {
+            \Log::info('Days data: ' . json_encode($data['days']));
+        }
+        return self::convertTimeFields($data);
+    }
+
+    public static function convertTimeFields(array $data): array
+    {
+        \Log::info('convertTimeFields called');
+        
+        // Handle single-day seminar time conversion
+        if (isset($data['time_hour'], $data['time_minute'], $data['time_period'])) {
+            \Log::info('Processing single-day time conversion');
+            $hour = (int)$data['time_hour'];
+            $minute = $data['time_minute'];
+            $period = $data['time_period'];
+            
+            // Convert to 24-hour format
+            if ($period === 'PM' && $hour !== 12) {
+                $hour += 12;
+            } elseif ($period === 'AM' && $hour === 12) {
+                $hour = 0;
+            }
+            
+            // Store as HH:MM format (no seconds)
+            $data['time'] = sprintf('%02d:%02d', $hour, $minute);
+            
+            // Clean up temporary fields
+            unset($data['time_hour'], $data['time_minute'], $data['time_period']);
+        }
+        
+        // Handle multi-day seminar time conversion
+        if (isset($data['days']) && is_array($data['days'])) {
+            \Log::info('Processing multi-day time conversion for ' . count($data['days']) . ' days');
+            foreach ($data['days'] as $index => &$day) {
+                \Log::info('Day ' . $index . ' keys: ' . json_encode(array_keys($day)));
+                if (isset($day['start_time_hour'], $day['start_time_minute'], $day['start_time_period'])) {
+                    \Log::info('Converting time for day ' . $index);
+                    $hour = (int)$day['start_time_hour'];
+                    $minute = $day['start_time_minute'];
+                    $period = $day['start_time_period'];
+                    
+                    // Convert to 24-hour format
+                    if ($period === 'PM' && $hour !== 12) {
+                        $hour += 12;
+                    } elseif ($period === 'AM' && $hour === 12) {
+                        $hour = 0;
+                    }
+                    
+                    $day['start_time'] = sprintf('%02d:%02d:00', $hour, $minute);
+                    \Log::info('Set start_time to: ' . $day['start_time']);
+                    
+                    // Clean up temporary fields
+                    unset($day['start_time_hour'], $day['start_time_minute'], $day['start_time_period']);
+                } else {
+                    // Debug: Check what time fields are missing
+                    \Log::info('Missing time fields for day ' . $index . '. Keys: ' . json_encode(array_keys($day)));
+                }
+            }
+        }
+        
+        \Log::info('convertTimeFields completed');
+        return $data;
     }
 
     public static function table(Table $table): Table
@@ -382,5 +548,10 @@ class SeminarResource extends Resource
             'view' => Pages\ViewSeminar::route('/{record}'),
             'edit' => Pages\EditSeminar::route('/{record}/edit'),
         ];
+    }
+
+    public static function mutateFormDataBeforeSave(array $data): array
+    {
+        return self::convertTimeFields($data);
     }
 }
