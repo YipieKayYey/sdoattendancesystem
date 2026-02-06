@@ -134,6 +134,12 @@
             <!-- QR Code Scanner -->
             <div class="mt-6">
                 <div id="qr-reader" class="w-full max-w-md mx-auto"></div>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        💡 <strong>Using a barcode scanner?</strong> Click on the "Ticket Hash" input field first, then scan your QR code. The scanner will automatically fill the field and process the check-in.
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -218,8 +224,62 @@
             });
         }
 
+        // Auto-focus on manual input for barcode scanner devices
+        function setupAutoFocus() {
+            // Find the ticket hash input field
+            const ticketInput = document.querySelector('input[name="ticketHash"]');
+            
+            if (ticketInput) {
+                // Auto-focus on page load
+                ticketInput.focus();
+                
+                // Re-focus when clicking anywhere else on the page
+                document.addEventListener('click', (e) => {
+                    // Don't refocus if clicking on the input itself or other form elements
+                    if (e.target !== ticketInput && !e.target.closest('button, select, textarea')) {
+                        setTimeout(() => ticketInput.focus(), 100);
+                    }
+                });
+                
+                // Re-focus after scan completes (Livewire update)
+                Livewire.hook('component.updated', () => {
+                    setTimeout(() => ticketInput.focus(), 500);
+                });
+                
+                // Auto-submit when scanner sends data (usually ends with Enter)
+                ticketInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && ticketInput.value.length >= 8) {
+                        e.preventDefault();
+                        @this.call('setTicketHashFromScan', ticketInput.value);
+                        ticketInput.value = ''; // Clear for next scan
+                    }
+                });
+                
+                // Auto-process when input reaches typical barcode length
+                let inputTimeout;
+                ticketInput.addEventListener('input', (e) => {
+                    clearTimeout(inputTimeout);
+                    const value = e.target.value;
+                    
+                    // If input looks like a complete ticket hash (16 chars), process it
+                    if (value.length >= 16) {
+                        inputTimeout = setTimeout(() => {
+                            if (e.target.value.length >= 16) {
+                                @this.call('setTicketHashFromScan', e.target.value);
+                                e.target.value = ''; // Clear for next scan
+                            }
+                        }, 200);
+                    }
+                });
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize QR scanner
             startScanner();
+            
+            // Setup auto-focus for barcode scanner
+            setupAutoFocus();
         });
 
         // Cleanup on page unload
