@@ -65,7 +65,7 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 
 ### Backend
 - **Framework**: Laravel 12.0 with PHP 8.2+
-- **Database**: SQLite with Eloquent ORM
+- **Database**: mysql with Eloquent ORM
 - **Admin Panel**: Filament v3.2
 - **Queue System**: Laravel Queues for background processing
 
