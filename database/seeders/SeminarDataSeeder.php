@@ -38,7 +38,7 @@ class SeminarDataSeeder extends Seeder
         $seminars = [
             [
                 'title' => 'Professional Development Workshop for Teachers 2024',
-                'slug' => 'professional-development-workshop-2024',
+                'slug' => \Illuminate\Support\Str::random(8),
                 'date' => '2026-02-27',
                 'venue' => 'SDO Conference Hall, Main Building',
                 'topic' => 'Effective Teaching Strategies, Classroom Management, and Student Engagement Techniques',
@@ -51,7 +51,7 @@ class SeminarDataSeeder extends Seeder
             ],
             [
                 'title' => 'CPD Program: Modern Educational Technologies',
-                'slug' => 'cpd-modern-educational-technologies',
+                'slug' => \Illuminate\Support\Str::random(8),
                 'date' => '2026-03-14',
                 'venue' => 'SDO Training Center',
                 'topic' => 'Digital Learning Tools, Online Assessment Methods, and Technology Integration in Education',
@@ -64,7 +64,7 @@ class SeminarDataSeeder extends Seeder
             ],
             [
                 'title' => 'Open Seminar: Educational Leadership and Management',
-                'slug' => 'open-seminar-educational-leadership',
+                'slug' => \Illuminate\Support\Str::random(8),
                 'date' => '2026-03-29',
                 'venue' => 'SDO Multi-Purpose Hall',
                 'topic' => 'School Leadership, Strategic Planning, and Educational Administration',
@@ -77,7 +77,7 @@ class SeminarDataSeeder extends Seeder
             ],
             [
                 'title' => '1st DIVISION MANAGEMENT COMMITTEE (MANCOM) MEETING',
-                'slug' => '1st-division-management-committee-mancom-meeting',
+                'slug' => \Illuminate\Support\Str::random(8),
                 'date' => '2026-01-29',
                 'venue' => 'Louis Restaurant Balanga City Bataan',
                 'topic' => 'SDS Concerns and Updates
@@ -99,7 +99,7 @@ Other Manners',
             unset($seminarData['attendees']);
 
             $seminar = Seminar::updateOrCreate(
-                ['slug' => $seminarData['slug']],
+                ['title' => $seminarData['title']],
                 $seminarData
             );
 
@@ -120,7 +120,7 @@ Other Manners',
 
             // Seed attendees only if flag is true
             if ($shouldSeedAttendees) {
-                if ($seminar->slug === '1st-division-management-committee-mancom-meeting') {
+                if ($seminar->title === '1st DIVISION MANAGEMENT COMMITTEE (MANCOM) MEETING') {
                     $this->seedManagementCommitteeAttendees($seminar);
                 } else {
                     $this->seedAttendeesForSeminar($seminar);

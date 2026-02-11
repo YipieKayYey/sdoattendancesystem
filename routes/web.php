@@ -8,6 +8,7 @@ use App\Services\AttendanceSheetPdfService;
 use App\Services\AttendanceCsvService;
 use App\Services\AnalyticsPdfService;
 use App\Services\AnalyticsCsvService;
+use App\Services\SeminarQrCodeService;
 use App\Http\Controllers\RegistrationDetailsController;
 use Illuminate\Support\Facades\Route;
 use Milon\Barcode\DNS2D;
@@ -71,7 +72,8 @@ Route::middleware(['auth'])->group(function () {
         $service = app(AttendanceSheetPdfService::class);
         $attendeeIds = request()->query('attendee_ids');
         $blankSignatures = request()->query('blank_signatures') === '1';
-        return $service->generateAttendanceSheet($seminar, $attendeeIds, $blankSignatures);
+        $dayId = request()->query('day_id');
+        return $service->generateAttendanceSheet($seminar, $attendeeIds, $blankSignatures, $dayId ? (int) $dayId : null);
     })->name('seminars.export-attendance-sheet');
 
     Route::get('/admin/seminars/{seminar}/export-attendance-csv', function (Seminar $seminar) {
@@ -90,4 +92,24 @@ Route::middleware(['auth'])->group(function () {
         $service = app(AnalyticsCsvService::class);
         return $service->generateAnalyticsCsv($seminar);
     })->name('analytics.export-csv');
+
+    Route::get('/admin/seminars/{seminar}/registration-qr/view', function (Seminar $seminar) {
+        return view('seminar-registration-qr-view', ['seminar' => $seminar]);
+    })->name('seminars.registration-qr.view');
+
+    Route::get('/admin/seminars/{seminar}/registration-qr', function (Seminar $seminar) {
+        $service = app(SeminarQrCodeService::class);
+        $png = $service->generatePng($seminar);
+        return response($png)
+            ->header('Content-Type', 'image/png')
+            ->header('Content-Disposition', 'inline; filename="registration-qr-' . $seminar->slug . '.png"');
+    })->name('seminars.registration-qr');
+
+    Route::get('/admin/seminars/{seminar}/registration-qr/download', function (Seminar $seminar) {
+        $service = app(SeminarQrCodeService::class);
+        $png = $service->generatePng($seminar);
+        return response($png)
+            ->header('Content-Type', 'image/png')
+            ->header('Content-Disposition', 'attachment; filename="registration-qr-' . $seminar->slug . '.png"');
+    })->name('seminars.registration-qr.download');
 });

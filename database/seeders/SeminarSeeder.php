@@ -17,7 +17,7 @@ class SeminarSeeder extends Seeder
         $seminars = [
             [
                 'title' => 'Professional Development Workshop for Teachers 2024',
-                'slug' => 'professional-development-workshop-2024',
+                'slug' => Str::random(8),
                 'date' => now()->addDays(30),
                 'capacity' => 50,
                 'is_open' => false,
@@ -28,7 +28,7 @@ class SeminarSeeder extends Seeder
             ],
             [
                 'title' => 'CPD Program: Modern Educational Technologies',
-                'slug' => 'cpd-modern-educational-technologies',
+                'slug' => Str::random(8),
                 'date' => now()->addDays(45),
                 'capacity' => 100,
                 'is_open' => false,
@@ -39,7 +39,7 @@ class SeminarSeeder extends Seeder
             ],
             [
                 'title' => 'Multi-Day Training: Advanced Teaching Methods',
-                'slug' => 'multi-day-advanced-teaching-methods',
+                'slug' => Str::random(8),
                 'date' => now()->addDays(60),
                 'capacity' => 75,
                 'is_open' => false,
@@ -50,7 +50,7 @@ class SeminarSeeder extends Seeder
             ],
             [
                 'title' => 'Open Seminar: Educational Leadership and Management',
-                'slug' => 'open-seminar-educational-leadership',
+                'slug' => Str::random(8),
                 'date' => now()->addDays(90),
                 'capacity' => null,
                 'is_open' => true,

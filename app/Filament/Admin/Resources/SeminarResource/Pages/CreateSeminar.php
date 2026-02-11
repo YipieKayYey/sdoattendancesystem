@@ -13,6 +13,11 @@ class CreateSeminar extends CreateRecord
     
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        if (empty($data['slug']) || strlen($data['slug']) !== 8) {
+            do {
+                $data['slug'] = \Illuminate\Support\Str::random(8);
+            } while (\App\Models\Seminar::where('slug', $data['slug'])->exists());
+        }
         // For multi-day seminars, if date is not set, use the first day's date
         if (!empty($data['is_multi_day']) && empty($data['date']) && !empty($data['days'])) {
             $firstDay = $data['days'][0] ?? null;

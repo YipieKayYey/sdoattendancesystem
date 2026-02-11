@@ -124,7 +124,9 @@ class Seminar extends Model
 
         static::creating(function ($seminar) {
             if (empty($seminar->slug)) {
-                $seminar->slug = Str::slug($seminar->title);
+                do {
+                    $seminar->slug = Str::random(8);
+                } while (static::where('slug', $seminar->slug)->exists());
             }
             // Set capacity to null for open seminars
             if ($seminar->is_open) {
@@ -133,8 +135,10 @@ class Seminar extends Model
         });
 
         static::updating(function ($seminar) {
-            if ($seminar->isDirty('title') && empty($seminar->slug)) {
-                $seminar->slug = Str::slug($seminar->title);
+            if ($seminar->isDirty('slug') && empty($seminar->slug)) {
+                do {
+                    $seminar->slug = Str::random(8);
+                } while (static::where('slug', $seminar->slug)->where('id', '!=', $seminar->id)->exists());
             }
             // Set capacity to null for open seminars
             if ($seminar->is_open) {

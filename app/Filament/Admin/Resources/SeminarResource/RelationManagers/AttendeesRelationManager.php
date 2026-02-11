@@ -281,46 +281,77 @@ class AttendeesRelationManager extends RelationManager
                     ->icon('heroicon-o-document-check')
                     ->color('info')
                     ->size('sm')
-                    ->visible(fn () => $this->ownerRecord->attendees()->whereNotNull('checked_in_at')->exists())
+                    ->visible(fn () => $this->ownerRecord)
                     ->modalHeading('Select Attendees for Attendance Sheet')
-                    ->modalDescription('Choose which checked-in attendees to include in the attendance sheet export.')
-                    ->form([
-                        Forms\Components\Select::make('attendee_ids')
-                            ->label('Attendees')
-                            ->options(function () {
-                                return $this->ownerRecord->attendees()
-                                    ->whereNotNull('checked_in_at')
-                                    ->orderByRaw('COALESCE(NULLIF(last_name, ""), name) ASC')
-                                    ->orderBy('first_name')
-                                    ->get()
-                                    ->mapWithKeys(function ($attendee) {
+                    ->modalDescription('Choose which day and checked-in attendees to include.')
+                    ->form(function (): array {
+                        $isMultiDay = $this->ownerRecord->isMultiDay();
+                        $dayOptions = $isMultiDay
+                            ? $this->ownerRecord->days->mapWithKeys(function ($day) {
+                                $label = 'Day ' . $day->day_number . ' - ' . $day->date->format('F j, Y');
+                                if ($day->start_time) {
+                                    $label .= ' ' . $day->formatted_time;
+                                }
+                                return [$day->id => $label];
+                            })
+                            : [];
+                        $form = [
+                            Forms\Components\Select::make('attendee_ids')
+                                ->label('Attendees')
+                                ->options(function () use ($isMultiDay) {
+                                    $query = $this->ownerRecord->attendees()
+                                        ->orderByRaw('COALESCE(NULLIF(last_name, ""), name) ASC')
+                                        ->orderBy('first_name');
+                                    if ($isMultiDay) {
+                                        $query->whereHas('checkIns', fn ($q) => $q->whereNotNull('checked_in_at'));
+                                    } else {
+                                        $query->whereNotNull('checked_in_at');
+                                    }
+                                    return $query->get()->mapWithKeys(function ($attendee) {
                                         $name = $attendee->full_name ?: $attendee->name;
                                         return [$attendee->id => $name];
                                     });
-                            })
-                            ->default(function () {
-                                return $this->ownerRecord->attendees()
-                                    ->whereNotNull('checked_in_at')
-                                    ->pluck('id')
-                                    ->toArray();
-                            })
-                            ->required()
-                            ->multiple()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Toggle::make('blank_signatures')
-                            ->label('Blank Signatures')
-                            ->helperText('Leave signature column blank (for agencies that don\'t allow e-signatures)')
-                            ->default(false),
-                    ])
+                                })
+                                ->default(function () use ($isMultiDay) {
+                                    $query = $this->ownerRecord->attendees();
+                                    if ($isMultiDay) {
+                                        $query->whereHas('checkIns', fn ($q) => $q->whereNotNull('checked_in_at'));
+                                    } else {
+                                        $query->whereNotNull('checked_in_at');
+                                    }
+                                    return $query->pluck('id')->toArray();
+                                })
+                                ->multiple()
+                                ->searchable()
+                                ->preload()
+                                ->helperText('Leave empty to generate a blank sheet'),
+                            Forms\Components\Toggle::make('blank_signatures')
+                                ->label('Blank Signatures')
+                                ->helperText('Leave signature column blank (for agencies that don\'t allow e-signatures)')
+                                ->default(false),
+                        ];
+                        if ($isMultiDay && $dayOptions->isNotEmpty()) {
+                            array_unshift($form, Forms\Components\Select::make('day_id')
+                                ->label('Day')
+                                ->options($dayOptions)
+                                ->required()
+                                ->default(fn () => $this->ownerRecord->days->first()?->id)
+                                ->helperText('The date, time, venue and room will follow the selected day\'s schedule'));
+                        }
+                        return $form;
+                    })
                     ->action(function (array $data) {
-                        $attendeeIds = $data['attendee_ids'];
+                        $attendeeIds = $data['attendee_ids'] ?? [];
                         $blankSignatures = $data['blank_signatures'] ?? false;
-                        $url = route('seminars.export-attendance-sheet', [
+                        $params = [
                             'seminar' => $this->ownerRecord->id,
-                            'attendee_ids' => implode(',', $attendeeIds),
+                            'attendee_ids' => is_array($attendeeIds) ? implode(',', $attendeeIds) : $attendeeIds,
                             'blank_signatures' => $blankSignatures ? '1' : '0',
-                        ]);
+                        ];
+                        if ($this->ownerRecord->isMultiDay() && !empty($data['day_id'])) {
+                            $params['day_id'] = $data['day_id'];
+                        }
+                        $url = route('seminars.export-attendance-sheet', $params);
                         \Filament\Notifications\Notification::make()
                             ->title('Opening attendance sheet in new tab...')
                             ->success()

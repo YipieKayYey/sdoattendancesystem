@@ -164,7 +164,11 @@ class ViewSeminar extends ViewRecord
                                                     ->send();
                                             })
                                     )
-                                    ->helperText('Click the clipboard icon to copy the registration URL. You can also select and copy the text manually.'),
+                                    ->helperText('Click the clipboard icon to copy the registration URL.'),
+                                Forms\Components\ViewField::make('registration_qr')
+                                    ->label('Registration QR Code')
+                                    ->view('components.seminar-registration-qr')
+                                    ->viewData(['seminar' => $this->record]),
                                 Forms\Components\Placeholder::make('registered_count')
                                     ->label('Registered Attendees')
                                     ->content(fn ($record) => $record->attendees()->count() . ' / ' . ($record->is_open ? 'Unlimited' : $record->capacity)),

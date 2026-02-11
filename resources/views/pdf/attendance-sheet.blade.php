@@ -279,30 +279,37 @@
                     <td colspan="3" style="padding: 0; vertical-align: top; border: none;">
                         <table style="width: 100%; border-collapse: collapse; margin: 0;">
                             <tr>
-                                <td style="width: 28%; border: 1pt solid #000; padding: 8pt 5pt; font-size: 9pt;">Date : {{ $seminar->date->format('F d, Y') }}</td>
-                                <td style="width: 72%; border: 1pt solid #000; padding: 8pt 5pt; font-size: 9pt;">Venue : {{ $seminar->venue ?? 'N/A' }}</td>
+                                <td style="width: 28%; border: 1pt solid #000; padding: 8pt 5pt; font-size: 9pt;">Date : {{ ($day ?? null) ? $day->date->format('F d, Y') : $seminar->date->format('F d, Y') }}</td>
+                                <td style="width: 72%; border: 1pt solid #000; padding: 8pt 5pt; font-size: 9pt;">Venue : {{ ($day ?? null) ? ($day->venue ?? 'N/A') : ($seminar->venue ?? 'N/A') }}</td>
                             </tr>
                         </table>
                     </td>
                 </tr>
                 <tr>
-                    <td>Topic/s : {{ $seminar->topic ?? 'N/A' }}</td>
+                    <td>Topic/s : {{ ($day ?? null) ? ($day->topic ?? 'N/A') : ($seminar->topic ?? 'N/A') }}</td>
                     <td>
                         Time :
-                        @if($seminar->time)
-                            @php
-                                $timeParts = explode(':', $seminar->time);
-                                $hour = (int)$timeParts[0];
-                                $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
-                                $ampm = $hour >= 12 ? 'PM' : 'AM';
-                                $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
-                                echo sprintf('%d:%02d %s', $hour12, $minute, $ampm);
-                            @endphp
+                        @php
+                            $timeValue = ($day ?? null) ? ($day->start_time ?? null) : $seminar->time;
+                        @endphp
+                        @if($timeValue)
+                            @if($day ?? null)
+                                {{ $day->formatted_time }}
+                            @else
+                                @php
+                                    $timeParts = explode(':', $timeValue);
+                                    $hour = (int)$timeParts[0];
+                                    $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                                    $ampm = $hour >= 12 ? 'PM' : 'AM';
+                                    $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                                    echo sprintf('%d:%02d %s', $hour12, $minute, $ampm);
+                                @endphp
+                            @endif
                         @else
                             N/A
                         @endif
                     </td>
-                    <td style="background-color: #a6a6a6;">Room : {{ $seminar->room ?? 'N/A' }}</td>
+                    <td style="background-color: #a6a6a6;">Room : {{ ($day ?? null) ? ($day->room ?? 'N/A') : ($seminar->room ?? 'N/A') }}</td>
                 </tr>
             </table>
 

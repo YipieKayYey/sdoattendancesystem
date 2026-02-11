@@ -63,18 +63,8 @@
                     @else
                         <!-- Registration Count -->
                         <div class="mb-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <span class="text-gray-700 font-medium text-sm sm:text-base">Registration Status</span>
-                                <span class="text-blue-700 font-bold text-base sm:text-lg">
-                                    {{ $seminar->registered_count }} of 
-                                    @if($seminar->is_open)
-                                        <span class="text-blue-600">Unlimited</span>
-                                    @else
-                                        {{ $seminar->capacity }}
-                                    @endif
-                                    spots filled
-                                </span>
-                            </div>
+                            <span class="text-gray-700 font-medium text-sm sm:text-base">Number of Registrations : </span>
+                            <span class="text-blue-700 font-bold text-base sm:text-lg">{{ $seminar->registered_count }}</span>
                         </div>
 
                         <!-- Multi-Day Seminar Information -->
