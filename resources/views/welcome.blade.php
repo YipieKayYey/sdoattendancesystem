@@ -386,7 +386,7 @@
                 <!-- Page Title Panel -->
                 <div class="title-panel">
                     <h2 class="page-title">Attendance Monitoring System</h2>
-                    <p class="page-subtitle">Digitalizing Participation for more efficient DepED Balanga City</p>
+                    <p class="page-subtitle">Digitalizing Participation for more efficient DepED SDO Balanga City</p>
                 </div>
 
                 <!-- Content Grid -->

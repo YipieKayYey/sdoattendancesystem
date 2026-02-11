@@ -14,13 +14,6 @@
             margin: 0;
             size: 14in 8.5in;
         }
-        
-        @page {
-            @bottom-right {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 8pt;
-            }
-        }
 
         body {
             font-family: "Liberation Sans", Arial, sans-serif;
@@ -64,8 +57,8 @@
 
         .info-table td {
             border: 1pt solid #000;
-            padding: 4pt 5pt;
-            font-size: 9pt;
+            padding: 6pt 8pt;
+            font-size: 11pt;
         }
 
         .info-label-cell {
@@ -89,8 +82,8 @@
         .table-header th,
         .table-body td {
             border: 1pt solid #000;
-            padding: 3pt 4pt;
-            font-size: 9pt;
+            padding: 8pt 6pt;
+            font-size: 11pt;
             overflow: hidden;
             word-wrap: break-word;
             white-space: nowrap;
@@ -110,7 +103,7 @@
         }
 
         .sub-caption {
-            font-size: 8pt;
+            font-size: 9pt;
             font-weight: bold;
         }
 
@@ -122,9 +115,9 @@
             table-layout: fixed !important;
         }
 
-        /* Prevent table header from repeating */
+        /* Show table header only on page 1, do not repeat on subsequent pages */
         thead {
-            display: table-header-group;
+            display: table-row-group;
         }
 
         tbody {
@@ -138,8 +131,8 @@
         /* Increase cell size */
         table tbody td,
         table thead th {
-            padding: 6pt 5pt;
-            min-height: 20pt;
+            padding: 10pt 8pt;
+            min-height: 28pt;
         }
 
         .no-col {
@@ -151,8 +144,8 @@
         }
 
         .signature-img {
-            max-width: 90px;
-            max-height: 20px;
+            max-width: 110px;
+            max-height: 28px;
             object-fit: contain;
         }
 
@@ -160,7 +153,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 0;
-            font-size: 9pt;
+            font-size: 11pt;
             border: 1pt solid #000;
         }
 
@@ -172,10 +165,10 @@
             border-right: 1pt solid #000;
             border-top: none;
             border-bottom: 1pt solid #000;
-            padding: 6pt 8pt;
+            padding: 10pt 12pt;
             vertical-align: top;
             width: 50%;
-            min-height: 80pt;
+            min-height: 100pt;
         }
 
         .footer-table td:first-child {
@@ -188,11 +181,12 @@
 
         .footer-title {
             font-weight: bold;
+            font-size: 11pt;
             margin-bottom: 2pt;
         }
 
         .footer-small {
-            font-size: 8pt;
+            font-size: 9pt;
             text-align: center;
             margin-top: 2pt;
         }
@@ -216,19 +210,19 @@
             display: block;
             text-align: center;
             margin: 2pt 0 2pt 0;
-            font-size: 10pt;
+            font-size: 11pt;
             letter-spacing: 1pt;
         }
 
         .footer-small-line {
-            font-size: 8pt;
+            font-size: 9pt;
             text-align: center;
             margin-top: 1pt;
         }
 
         .footer-datetime {
             margin-top: 20pt;
-            font-size: 9pt;
+            font-size: 11pt;
         }
 
         .page-meta {
@@ -246,8 +240,8 @@
         .signature-container {
             position: relative;
             display: inline-block;
-            width: 90px;
-            height: 20px;
+            width: 110px;
+            height: 28px;
             overflow: hidden;
         }
 
@@ -256,8 +250,8 @@
             top: 0;
             left: 0;
             z-index: 1;
-            max-width: 90px;
-            max-height: 20px;
+            max-width: 110px;
+            max-height: 28px;
             display: block;
             opacity: 0.7;
         }
@@ -365,25 +359,25 @@
             {{-- Continuous table with header only once --}}
             <table style="width: 100%; border-collapse: collapse; margin-top: 0;">
                 <tr>
-                    <th width="2%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold; text-align: center;">NO.</th>
-                    <th width="24%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold;">
+                    <th width="2%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold; text-align: center;">NO.</th>
+                    <th width="24%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold;">
                         NAME<br>
-                        <span style="font-size: 8pt; font-weight: bold;">(First Name, Middle Name, Last Name)</span>
+                        <span style="font-size: 9pt; font-weight: bold;">(First Name, Middle Name, Last Name)</span>
                     </th>
-                    <th width="11%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold; text-align: center;">SIGNATURE</th>
-                    <th width="10%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold;">MOBILE PHONE NUMBER</th>
-                    <th width="22%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold;">E-MAIL ADDRESS</th>
-                    <th width="14%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold;">PRC LICENSE NO.</th>
-                    <th width="17%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; font-weight: bold;">
+                    <th width="11%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold; text-align: center;">SIGNATURE</th>
+                    <th width="10%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold;">MOBILE PHONE NUMBER</th>
+                    <th width="22%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold;">E-MAIL ADDRESS</th>
+                    <th width="14%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold;">PRC LICENSE NO.</th>
+                    <th width="17%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; font-weight: bold;">
                         EXPIRY DATE<br>
-                        <span style="font-size: 8pt; font-weight: bold;">(DD/MM/YYYY)</span>
+                        <span style="font-size: 9pt; font-weight: bold;">(DD/MM/YYYY)</span>
                     </th>
                 </tr>
                 @foreach($attendees as $attendee)
                     <tr>
-                        <td width="2%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; text-align: center;">{{ $number++ }}</td>
-                        <td width="24%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; word-wrap: break-word;">{{ $attendee->full_name ?? $attendee->name }}</td>
-                        <td width="11%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; text-align: center;">
+                        <td width="2%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; text-align: center;">{{ $number++ }}</td>
+                        <td width="24%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; word-wrap: break-word;">{{ $attendee->full_name ?? $attendee->name }}</td>
+                        <td width="11%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; text-align: center;">
                             @if (!($blankSignatures ?? false) && $attendee->hasSignature() && $attendee->signature_image)
                                 <div class="signature-container">
                                     <img
@@ -397,16 +391,16 @@
                                 </div>
                             @endif
                         </td>
-                        <td width="10%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt;">{{ $attendee->mobile_phone ?? '' }}</td>
-                        <td width="22%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt; word-wrap: break-word;">{{ $attendee->email }}</td>
-                        <td width="14%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt;">
+                        <td width="10%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt;">{{ $attendee->mobile_phone ?? '' }}</td>
+                        <td width="22%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; word-wrap: break-word;">{{ $attendee->email }}</td>
+                        <td width="14%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt;">
                             @if ($attendee->isTeaching())
                                 {{ $attendee->prc_license_no ?? 'N/A' }}
                             @else
                                 N/A
                             @endif
                         </td>
-                        <td width="17%" style="border: 1pt solid #000; padding: 6pt 5pt; font-size: 9pt;">
+                        <td width="17%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt;">
                             @if ($attendee->isTeaching() && $attendee->prc_license_expiry)
                                 {{ $attendee->prc_license_expiry->format('d/m/Y') }}
                             @else
@@ -420,7 +414,7 @@
                     <td colspan="7" style="border: 1pt solid #000; padding: 0;">
                         <table style="width: 100%; border-collapse: collapse; border: none; margin: 0;">
                             <tr>
-                                <td style="border-right: 1pt solid #000; border-top: none; border-bottom: none; border-left: none; padding: 6pt 8pt; vertical-align: top; width: 50%;">
+                                <td style="border-right: 1pt solid #000; border-top: none; border-bottom: none; border-left: none; padding: 10pt 12pt; vertical-align: top; width: 50%;">
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
                                             <td style="border: none; padding: 0;">
@@ -438,13 +432,13 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="border: none; padding: 0; margin-top: 20pt; font-size: 9pt;">
+                                            <td style="border: none; padding: 0; margin-top: 20pt; font-size: 11pt;">
                                                 Date and Time:
                                             </td>
                                         </tr>
                                     </table>
                                 </td>
-                                <td style="border-right: none; border-top: none; border-bottom: none; padding: 6pt 8pt; vertical-align: top; width: 50%;">
+                                <td style="border-right: none; border-top: none; border-bottom: none; padding: 10pt 12pt; vertical-align: top; width: 50%;">
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
                                             <td style="border: none; padding: 0;">
@@ -462,7 +456,7 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="border: none; padding: 0; margin-top: 20pt; font-size: 9pt;">
+                                            <td style="border: none; padding: 0; margin-top: 20pt; font-size: 11pt;">
                                                 Date and Time:
                                             </td>
                                         </tr>
@@ -478,16 +472,8 @@
                 CPDD-12-A<br>
                 Rev. 00<br>
                 June 29, 2020<br>
-                <script type="text/php">
-                    if (isset($pdf)) {
-                        $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
-                        $font = $fontMetrics->getFont("Arial", "normal");
-                        $size = 8;
-                        $y = $pdf->get_height() - 15;
-                        $x = $pdf->get_width() - 100;
-                        $pdf->page_text($x, $y, $text, $font, $size, array(0, 0, 0));
-                    }
-                </script>
+                Page PAGE___of___<br>
+                NUMPAGES___
             </div>
         </div>
     </div>
@@ -573,16 +559,8 @@
                 CPDD-12-A<br>
                 Rev. 00<br>
                 June 29, 2020<br>
-                <script type="text/php">
-                    if (isset($pdf)) {
-                        $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
-                        $font = $fontMetrics->getFont("Arial", "normal");
-                        $size = 8;
-                        $y = $pdf->get_height() - 15;
-                        $x = $pdf->get_width() - 100;
-                        $pdf->page_text($x, $y, $text, $font, $size, array(0, 0, 0));
-                    }
-                </script>
+                Page PAGE___of___<br>
+                NUMPAGES___
             </div>
         </div>
     </div>

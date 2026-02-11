@@ -52,11 +52,17 @@ class AnalyticsResource extends Resource
                 Tables\Columns\TextColumn::make('registered_count')
                     ->label('Registrations')
                     ->getStateUsing(fn ($record) => $record->attendees()->count())
-                    ->sortable(),
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->withCount('attendees')->orderBy('attendees_count', $direction);
+                    }),
                 Tables\Columns\TextColumn::make('checked_in_count')
                     ->label('Checked In')
                     ->getStateUsing(fn ($record) => $record->attendees()->whereNotNull('checked_in_at')->count())
-                    ->sortable(),
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->withCount(['attendees as checked_in_count' => function ($query) {
+                            $query->whereNotNull('checked_in_at');
+                        }])->orderBy('checked_in_count', $direction);
+                    }),
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),
