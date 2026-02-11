@@ -329,7 +329,7 @@
                             <td width="5%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; text-align: center;">{{ $number++ }}</td>
                             <td width="35%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; word-wrap: break-word;">{{ $attendee->full_name ?? $attendee->name }}</td>
                             <td width="20%" style="border: 1pt solid #000; padding: 10pt 8pt; font-size: 11pt; text-align: center;">
-                                @if($attendee->hasSignature() && $attendee->signature_image)
+                                @if (!($blankSignatures ?? false) && $attendee->hasSignature() && $attendee->signature_image)
                                     <div class="signature-container">
                                         <img
                                             src="data:image/png;base64,{{ $attendee->signature_image }}"

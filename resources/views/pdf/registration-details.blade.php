@@ -140,7 +140,7 @@
     <div class="header">
         <img src="{{ public_path('images/sdodesignlogo.png') }}" alt="SDO Logo" class="logo" onerror="this.style.display='none'">
         <div class="title">Registration Details</div>
-        <div class="subtitle">Schools Division Office Seminar Management System</div>
+        <div class="subtitle">Schools Division Office Attendance Monitoring System</div>
         <div class="success-badge">Registration Successful</div>
     </div>
 
@@ -270,7 +270,7 @@
     <!-- Footer -->
     <div class="footer">
         <div>Generated on {{ $generatedAt->format('F j, Y g:i A') }}</div>
-        <div>Schools Division Office Seminar Management System</div>
+        <div>Schools Division Office Attendance Monitoring System</div>
         <div style="margin-top: 5px;">This is an official registration confirmation document.</div>
     </div>
 </body>

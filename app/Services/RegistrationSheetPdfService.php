@@ -19,7 +19,9 @@ class RegistrationSheetPdfService
      */
     public function generateRegistrationSheet(Seminar $seminar, ?string $attendeeIds = null, bool $blankSignatures = false): Response
     {
-        $query = $seminar->attendees()->orderBy('created_at');
+        $query = $seminar->attendees()
+            ->orderByRaw('COALESCE(NULLIF(last_name, ""), name) ASC')
+            ->orderBy('first_name');
         
         if ($attendeeIds) {
             $ids = explode(',', $attendeeIds);

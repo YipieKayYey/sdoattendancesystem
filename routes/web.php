@@ -70,7 +70,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/seminars/{seminar}/export-attendance-sheet', function (Seminar $seminar) {
         $service = app(AttendanceSheetPdfService::class);
         $attendeeIds = request()->query('attendee_ids');
-        return $service->generateAttendanceSheet($seminar, $attendeeIds);
+        $blankSignatures = request()->query('blank_signatures') === '1';
+        return $service->generateAttendanceSheet($seminar, $attendeeIds, $blankSignatures);
     })->name('seminars.export-attendance-sheet');
 
     Route::get('/admin/seminars/{seminar}/export-attendance-csv', function (Seminar $seminar) {

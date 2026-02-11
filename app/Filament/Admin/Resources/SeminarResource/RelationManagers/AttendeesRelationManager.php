@@ -290,7 +290,8 @@ class AttendeesRelationManager extends RelationManager
                             ->options(function () {
                                 return $this->ownerRecord->attendees()
                                     ->whereNotNull('checked_in_at')
-                                    ->orderBy('checked_in_at')
+                                    ->orderByRaw('COALESCE(NULLIF(last_name, ""), name) ASC')
+                                    ->orderBy('first_name')
                                     ->get()
                                     ->mapWithKeys(function ($attendee) {
                                         $name = $attendee->full_name ?: $attendee->name;
@@ -307,12 +308,18 @@ class AttendeesRelationManager extends RelationManager
                             ->multiple()
                             ->searchable()
                             ->preload(),
+                        Forms\Components\Toggle::make('blank_signatures')
+                            ->label('Blank Signatures')
+                            ->helperText('Leave signature column blank (for agencies that don\'t allow e-signatures)')
+                            ->default(false),
                     ])
                     ->action(function (array $data) {
                         $attendeeIds = $data['attendee_ids'];
+                        $blankSignatures = $data['blank_signatures'] ?? false;
                         $url = route('seminars.export-attendance-sheet', [
                             'seminar' => $this->ownerRecord->id,
-                            'attendee_ids' => implode(',', $attendeeIds)
+                            'attendee_ids' => implode(',', $attendeeIds),
+                            'blank_signatures' => $blankSignatures ? '1' : '0',
                         ]);
                         \Filament\Notifications\Notification::make()
                             ->title('Opening attendance sheet in new tab...')

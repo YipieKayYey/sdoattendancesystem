@@ -12,12 +12,15 @@ class AttendanceSheetPdfService
 {
     /**
      * Generate Attendance Sheet PDF using HTML template
+     *
+     * @param bool $blankSignatures Whether to leave signature column blank
      */
-    public function generateAttendanceSheet(Seminar $seminar, ?string $attendeeIds = null): Response
+    public function generateAttendanceSheet(Seminar $seminar, ?string $attendeeIds = null, bool $blankSignatures = false): Response
     {
         $query = $seminar->attendees()
             ->whereNotNull('checked_in_at')
-            ->orderBy('checked_in_at');
+            ->orderByRaw('COALESCE(NULLIF(last_name, ""), name) ASC')
+            ->orderBy('first_name');
         
         if ($attendeeIds) {
             $ids = explode(',', $attendeeIds);
@@ -36,6 +39,7 @@ class AttendanceSheetPdfService
         $pdf = Pdf::loadView('pdf.attendance-sheet', [
             'seminar' => $seminar,
             'attendees' => $attendees,
+            'blankSignatures' => $blankSignatures,
         ])
         ->setPaper([0, 0, 612, 936], 'portrait') // 8.5in x 13in in points (8.5*72 = 612, 13*72 = 936)
         ->setOption('enable-local-file-access', true)
