@@ -26,6 +26,27 @@ Route::get('/login', function () {
 Route::get('/register/{slug}', RegisterAttendee::class)
     ->name('register');
 
+Route::get('/survey/{slug}', function (string $slug) {
+    $seminar = \App\Models\Seminar::where('slug', $slug)->first();
+
+    if (!$seminar) {
+        abort(404);
+    }
+
+    $redirectUrl = $seminar->survey_form_url
+        ?: route('register', ['slug' => $slug]);
+
+    if ($seminar->survey_form_url) {
+        $cookieName = 'survey_clicked_' . $seminar->id;
+        if (!request()->cookie($cookieName)) {
+            $seminar->surveyLinkClicks()->create(['clicked_at' => now()]);
+            cookie()->queue($cookieName, '1', 60 * 24);
+        }
+    }
+
+    return redirect()->away($redirectUrl);
+})->name('survey.redirect');
+
 Route::get('/registration/success/{ticket_hash}', function (string $ticket_hash) {
     $attendee = Attendee::where('ticket_hash', $ticket_hash)->firstOrFail();
     

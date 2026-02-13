@@ -15,10 +15,11 @@
         }
 
         :root {
-            --primary-purple: #3c1b7a;
-            --dark-purple: #2d1360;
+            --primary-blue: #18309b;
+            --dark-blue: #2d1360;
             --accent-cyan: #00bcd4;
-            --text-purple: #3c1b7a;
+            --text-blue: #1b297a;
+            --bg-overlay-opacity: 0.7; /* Adjust this value: 0 = fully transparent, 1 = fully opaque */
         }
 
         body {
@@ -35,21 +36,21 @@
             flex-direction: column;
         }
 
-        /* Header Bar - Purple */
+        /* Header Bar - Purple - REDUCED SIZE */
         .header-bar {
-            background: var(--primary-purple);
-            padding: 1.5rem 3rem;
+            background: var(--primary-blue);
+            padding: 1rem 2rem;
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            gap: 1rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             position: relative;
             z-index: 100;
         }
 
         .logo-circle {
-            /* Adjustable size - Change these values to resize the logo */
-            --logo-size: 90px;  /* Change this value: try 80px, 100px, 120px, etc. */
+            /* Reduced logo size */
+            --logo-size: 65px;
             
             width: var(--logo-size);
             height: var(--logo-size);
@@ -71,39 +72,22 @@
             object-position: center;
             border-radius: 50%;
         }
-        
-        /* Optional: Different logo size classes you can use */
-        .logo-circle.logo-small {
-            --logo-size: 70px;
-        }
-        
-        .logo-circle.logo-medium {
-            --logo-size: 90px;
-        }
-        
-        .logo-circle.logo-large {
-            --logo-size: 110px;
-        }
-        
-        .logo-circle.logo-xlarge {
-            --logo-size: 130px;
-        }
 
         .header-title {
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-size: clamp(1.5rem, 4vw, 2.25rem);
             font-weight: 700;
             color: white;
             letter-spacing: 0.5px;
         }
 
-        /* Content Section with Background */
+        /* Content Section with Background - REDUCED PADDING */
         .content-section {
             flex: 1;
             background-image: url('{{ asset("images/SdoLandingBg.png") }}');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            padding: 3rem 2rem;
+            padding: 2rem 1.5rem;
             position: relative;
         }
 
@@ -115,90 +99,90 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, var(--bg-overlay-opacity));
             z-index: 1;
         }
 
         .content-wrapper {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             position: relative;
             z-index: 10;
         }
 
-        /* Page Title Section */
+        /* Page Title Section - REDUCED SIZE */
         .title-panel {
             background: white;
-            border-radius: 16px;
-            padding: 2rem 3rem;
-            margin-bottom: 2rem;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(60, 27, 122, 0.1);
         }
 
         .page-title {
-            font-size: clamp(2rem, 4vw, 3rem);
+            font-size: clamp(1.5rem, 3.5vw, 2.25rem);
             font-weight: 700;
-            color: var(--text-purple);
-            margin-bottom: 0.5rem;
+            color: var(--text-blue);
+            margin-bottom: 0.4rem;
             text-decoration: underline;
-            text-decoration-color: var(--text-purple);
-            text-decoration-thickness: 3px;
-            text-underline-offset: 8px;
+            text-decoration-color: var(--text-blue);
+            text-decoration-thickness: 2px;
+            text-underline-offset: 6px;
         }
 
         .page-subtitle {
-            font-size: clamp(1rem, 2vw, 1.25rem);
-            color: var(--text-purple);
+            font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+            color: var(--text-blue);
             font-weight: 500;
         }
 
-        /* Main Content Grid */
+        /* Main Content Grid - REDUCED GAP */
         .content-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
         }
 
         @media (min-width: 1024px) {
             .content-grid {
                 grid-template-columns: 1.3fr 1fr;
-                gap: 2.5rem;
+                gap: 2rem;
             }
         }
 
-        /* Welcome Card */
+        /* Welcome Card - REDUCED SIZE */
         .welcome-card {
             background: white;
-            border: 3px solid var(--primary-purple);
-            border-radius: 16px;
-            padding: 2rem 2.5rem;
+            border: 3px solid var(--primary-blue);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
             height: fit-content;
             align-self: start;
         }
 
         .welcome-card p {
-            color: var(--text-purple);
-            font-size: 1.15rem;
-            line-height: 1.8;
+            color: var(--text-blue);
+            font-size: 1rem;
+            line-height: 1.7;
             font-weight: 500;
             margin: 0;
         }
 
-        /* Action Cards Container */
+        /* Action Cards Container - REDUCED GAP */
         .action-cards {
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.5rem;
         }
 
-        /* Action Card */
+        /* Action Card - REDUCED SIZE */
         .action-card {
             background: white;
-            border-radius: 16px;
-            padding: 2rem 2.5rem;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
             border: 1px solid rgba(60, 27, 122, 0.1);
@@ -212,13 +196,13 @@
         .card-header {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
-            margin-bottom: 1.25rem;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         .card-icon {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -226,31 +210,31 @@
         }
 
         .card-icon svg {
-            width: 50px;
-            height: 50px;
-            fill: var(--primary-purple);
+            width: 40px;
+            height: 40px;
+            fill: var(--primary-blue);
         }
 
         .card-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
-            color: var(--text-purple);
+            color: var(--text-blue);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .card-description {
             color: #333;
-            font-size: 0.95rem;
-            margin-bottom: 1.75rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
             line-height: 1.6;
         }
 
-        /* Buttons */
+        /* Buttons - REDUCED SIZE */
         .btn {
             display: inline-block;
-            padding: 0.85rem 2.25rem;
-            font-size: 1rem;
+            padding: 0.7rem 1.75rem;
+            font-size: 0.95rem;
             font-weight: 600;
             text-decoration: none;
             border-radius: 8px;
@@ -262,7 +246,7 @@
         }
 
         .btn-primary {
-            background: var(--dark-purple);
+            background: var(--dark-blue);
             color: white;
             box-shadow: 0 4px 15px rgba(60, 27, 122, 0.3);
         }
@@ -285,9 +269,9 @@
             transform: translateY(-2px);
         }
 
-        /* Footer Bar - Purple */
+        /* Footer Bar - Purple - REDUCED SIZE */
         .footer-bar {
-            background: var(--primary-purple);
+            background: var(--primary-blue);
             padding: 0;
             position: relative;
             z-index: 100;
@@ -298,15 +282,15 @@
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 2.5rem;
-            padding: 2rem 3rem;
+            gap: 2rem;
+            padding: 1.5rem 2rem;
             background: white;
             margin: 0;
             width: 100%;
         }
 
         .partner-logo {
-            height: 70px;
+            height: 55px;
             object-fit: contain;
             transition: transform 0.3s ease;
         }
@@ -318,55 +302,55 @@
         .copyright {
             text-align: center;
             color: white;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
-            padding: 1.5rem;
+            padding: 1rem;
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-bar {
-                padding: 1.25rem 1.5rem;
+                padding: 1rem 1.25rem;
                 flex-direction: column;
                 text-align: center;
             }
 
             .logo-circle {
-                --logo-size: 80px;  /* Mobile logo size */
+                --logo-size: 60px;
             }
 
             .content-section {
-                padding: 2rem 1rem;
+                padding: 1.5rem 1rem;
             }
 
             .title-panel {
-                padding: 1.5rem 2rem;
+                padding: 1.25rem 1.5rem;
             }
 
             .welcome-card,
             .action-card {
-                padding: 1.75rem;
+                padding: 1.25rem 1.5rem;
             }
 
             .partner-logos {
-                gap: 1.5rem;
+                gap: 1.25rem;
             }
 
             .partner-logo {
-                height: 50px;
+                height: 45px;
             }
         }
 
         /* Shield Icon for Admin */
         .shield-icon {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
         }
 
         /* Calendar Icon */
         .calendar-icon {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
         }
     </style>
 </head>
@@ -386,7 +370,7 @@
                 <!-- Page Title Panel -->
                 <div class="title-panel">
                     <h2 class="page-title">Attendance Monitoring System</h2>
-                    <p class="page-subtitle">Digitalizing Participation for more efficient DepED SDO Balanga City</p>
+                    <p class="page-subtitle">Digitalizing Participation for more efficient DepED Balanga City</p>
                 </div>
 
                 <!-- Content Grid -->
@@ -438,7 +422,7 @@
             </div>
         </section>
 
-        <!-- Purple Footer Bar -->
+        <!-- Footer -->
         <footer class="footer-bar">
             <div class="partner-logos">
                 <img src="{{ asset('images/depedlogo.png') }}" alt="DepED" class="partner-logo">

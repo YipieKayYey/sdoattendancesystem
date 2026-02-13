@@ -414,15 +414,21 @@ class AttendeesRelationManager extends RelationManager
                                     ->label('Name')
                                     ->content(fn ($record) => $record->full_name ?: $record->name),
                                 Forms\Components\Placeholder::make('type')
-                                    ->label('Type')
+                                    ->label('Personnel Type')
                                     ->content(fn ($record) => $record->personnel_type === 'teaching'
                                         ? 'Teaching'
                                         : ($record->personnel_type === 'non_teaching' ? 'Non-Teaching' : '—')),
+                                Forms\Components\Placeholder::make('sex')
+                                    ->label('Sex')
+                                    ->content(fn ($record) => $record->sex ? ucfirst($record->sex) : '—'),
+                                Forms\Components\Placeholder::make('school_office_agency')
+                                    ->label('School/Office/Agency')
+                                    ->content(fn ($record) => $record->school_office_agency ?? '—'),
                                 Forms\Components\Placeholder::make('position')
                                     ->label('Position')
                                     ->content(fn ($record) => $record->position ?? '—'),
                             ])
-                            ->columns(3),
+                            ->columns(2),
                         Forms\Components\Section::make('Contact')
                             ->schema([
                                 Forms\Components\Placeholder::make('email')

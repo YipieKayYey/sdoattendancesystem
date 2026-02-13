@@ -20,6 +20,7 @@ class Seminar extends Model
         'topic',
         'time',
         'room',
+        'survey_form_url',
         'is_multi_day',
     ];
 
@@ -194,6 +195,21 @@ class Seminar extends Model
     public function getRegisteredCountAttribute(): int
     {
         return $this->attendees()->count();
+    }
+
+    public function surveyLinkClicks(): HasMany
+    {
+        return $this->hasMany(SurveyLinkClick::class);
+    }
+
+    public function getSurveyTrackingLinkAttribute(): string
+    {
+        return route('survey.redirect', ['slug' => $this->slug]);
+    }
+
+    public function getSurveyClicksCountAttribute(): int
+    {
+        return $this->surveyLinkClicks()->count();
     }
 
     public function isFull(): bool

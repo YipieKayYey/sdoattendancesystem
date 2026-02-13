@@ -17,19 +17,19 @@ class SeminarDataSeeder extends Seeder
     {
         // Create admin users
         User::updateOrCreate(
-            ['email' => 'sdoadmin@example.com'],
+            ['email' => 'sdoadmin@deped.gov.ph'],
             [
                 'name' => 'SDO Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('SDOBC2026'),
                 'email_verified_at' => now(),
             ]
         );
 
         User::updateOrCreate(
-            ['email' => 'sdoadmin2@example.com'],
+            ['email' => 'sdoadmin2@deped.gov.ph'],
             [
                 'name' => 'SDO Admin 2',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('SDOBC2026'),
                 'email_verified_at' => now(),
             ]
         );

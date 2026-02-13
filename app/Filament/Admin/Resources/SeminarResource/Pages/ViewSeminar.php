@@ -12,6 +12,8 @@ class ViewSeminar extends ViewRecord
 {
     protected static string $resource = SeminarResource::class;
 
+    protected static ?string $pollingInterval = '5s';
+
     protected function resolveRecord(int | string $key): \Illuminate\Database\Eloquent\Model
     {
         return static::getModel()::withTrashed()->findOrFail($key);
@@ -20,6 +22,7 @@ class ViewSeminar extends ViewRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['registration_url'] = $this->record->registration_url;
+        $data['survey_tracking_link'] = $this->record->survey_tracking_link;
         
         // CRITICAL: Prevent any Carbon parsing of time field
         // Get raw value directly from database to avoid any casting
@@ -54,6 +57,7 @@ class ViewSeminar extends ViewRecord
             ->schema([
                 // Seminar Information Section
                 Forms\Components\Section::make('Seminar Information')
+                    ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
@@ -86,6 +90,7 @@ class ViewSeminar extends ViewRecord
                 
                 // Single Day Settings Section
                 Forms\Components\Section::make('Single Day Settings')
+                    ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
@@ -108,6 +113,7 @@ class ViewSeminar extends ViewRecord
                 
                 // Multi-Day Settings Section
                 Forms\Components\Section::make('Multi-Day Settings')
+                    ->collapsible()
                     ->schema([
                         Forms\Components\Repeater::make('days')
                             ->relationship('days')
@@ -144,6 +150,7 @@ class ViewSeminar extends ViewRecord
                 
                 // Registration Information Section
                 Forms\Components\Section::make('Registration Information')
+                    ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
@@ -184,6 +191,36 @@ class ViewSeminar extends ViewRecord
                                     ->visible(fn ($record) => !$record->is_open),
                             ]),
                     ]),
+
+                Forms\Components\Section::make('Client Satisfaction Survey')
+                    ->collapsible()
+                    ->schema([
+                        Forms\Components\Placeholder::make('survey_form_url_display')
+                            ->label('Survey URL (Microsoft Forms)')
+                            ->content(fn ($record) => $record->survey_form_url ?: 'Not set'),
+                        Forms\Components\TextInput::make('survey_tracking_link')
+                            ->label('Survey Tracking Link')
+                            ->default(fn ($record) => $record->survey_tracking_link)
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->suffixAction(
+                                Forms\Components\Actions\Action::make('copy')
+                                    ->icon('heroicon-o-clipboard')
+                                    ->action(function () {
+                                        $url = $this->record->survey_tracking_link;
+                                        $this->js('navigator.clipboard.writeText(' . json_encode($url) . ')');
+                                        Notification::make()
+                                            ->title('Survey link copied!')
+                                            ->body('Use this link in emails to track clicks.')
+                                            ->success()
+                                            ->send();
+                                    })
+                            )
+                            ->helperText('Share this link in emails. When clicked, it logs the visit and redirects to the survey.'),
+                        Forms\Components\Placeholder::make('survey_clicks')
+                            ->label('Survey Link Clicks')
+                            ->content(fn ($record) => $record->survey_clicks_count . ' of ' . $record->registered_count . ' registered' . ($record->registered_count > 0 ? ' (' . round($record->survey_clicks_count / $record->registered_count * 100, 1) . '%)' : '')),
+                    ]),
             ]);
     }
 
@@ -193,6 +230,28 @@ class ViewSeminar extends ViewRecord
             Actions\EditAction::make()
                 ->size('sm')
                 ->visible(fn () => !$this->record->trashed()),
+            Actions\Action::make('endSeminar')
+                ->label(fn () => $this->record->is_ended ? 'Reopen Seminar' : 'End Seminar')
+                ->icon(fn () => $this->record->is_ended ? 'heroicon-o-arrow-path' : 'heroicon-o-x-circle')
+                ->color(fn () => $this->record->is_ended ? 'success' : 'danger')
+                ->size('sm')
+                ->visible(fn () => !$this->record->trashed())
+                ->requiresConfirmation()
+                ->modalHeading(fn () => $this->record->is_ended ? 'Reopen Seminar' : 'End Seminar')
+                ->modalDescription(fn () => $this->record->is_ended
+                    ? 'This will reopen registration for this seminar. Users will be able to register again.'
+                    : 'This will end the seminar and prevent new registrations. Existing registrations will remain.')
+                ->action(function () {
+                    $this->record->is_ended = !$this->record->is_ended;
+                    $this->record->save();
+                    Notification::make()
+                        ->title($this->record->is_ended ? 'Seminar ended' : 'Seminar reopened')
+                        ->body($this->record->is_ended
+                            ? 'Registration for this seminar has been closed.'
+                            : 'Registration for this seminar has been reopened.')
+                        ->success()
+                        ->send();
+                }),
             Actions\Action::make('archive')
                 ->label('Archive')
                 ->icon('heroicon-o-archive-box')

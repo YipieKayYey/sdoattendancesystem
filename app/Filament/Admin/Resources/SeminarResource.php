@@ -344,6 +344,17 @@ class SeminarResource extends Resource
                             ->itemLabel(fn (array $state): ?string => $state['date'] ? 'Day ' . ($state['day_number'] ?? '?') . ' - ' . \Carbon\Carbon::parse($state['date'])->format('M j, Y') : null),
                     ])
                     ->visible(fn (Get $get) => $get('is_multi_day')),
+
+                Forms\Components\Section::make('Client Satisfaction Survey')
+                    ->schema([
+                        Forms\Components\TextInput::make('survey_form_url')
+                            ->label('Microsoft Forms / Survey URL')
+                            ->url()
+                            ->maxLength(500)
+                            ->placeholder('https://forms.office.com/...')
+                            ->helperText('Optional. When set, use the tracking link in emails. Clicks are counted and shown in the seminar view.'),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -432,6 +443,8 @@ class SeminarResource extends Resource
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
                     ->sortable()
+                    ->limit(50)
+                    ->tooltip(fn (Seminar $record) => $record->title)
                     ->description(fn (Seminar $record) => $record->trashed() ? 'Archived' : null)
                     ->icon(fn (Seminar $record) => $record->trashed() ? 'heroicon-o-archive-box' : null)
                     ->iconColor(fn (Seminar $record) => $record->trashed() ? 'warning' : null),
@@ -445,12 +458,6 @@ class SeminarResource extends Resource
                     ->badge()
                     ->color(fn ($state) => $state > 1 ? 'info' : 'gray')
                     ->visible(fn (?Seminar $record) => $record && $record->isMultiDay()),
-                Tables\Columns\TextColumn::make('is_open')
-                    ->label('Type')
-                    ->formatStateUsing(fn ($state) => $state ? 'Open' : 'Limited')
-                    ->badge()
-                    ->color(fn ($state) => $state ? 'success' : 'gray')
-                    ->icon(fn ($state) => $state ? 'heroicon-o-globe-alt' : 'heroicon-o-lock-closed'),
                 Tables\Columns\TextColumn::make('is_ended')
                     ->label('Status')
                     ->formatStateUsing(fn ($state) => $state ? 'Ended' : 'Active')
@@ -463,57 +470,6 @@ class SeminarResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make()
-                    ->visible(fn (Seminar $record) => !$record->trashed()),
-                Tables\Actions\Action::make('endSeminar')
-                    ->label(fn (Seminar $record) => $record->is_ended ? 'Reopen Seminar' : 'End Seminar')
-                    ->icon(fn (Seminar $record) => $record->is_ended ? 'heroicon-o-arrow-path' : 'heroicon-o-x-circle')
-                    ->color(fn (Seminar $record) => $record->is_ended ? 'success' : 'danger')
-                    ->visible(fn (Seminar $record) => !$record->trashed())
-                    ->requiresConfirmation()
-                    ->modalHeading(fn (Seminar $record) => $record->is_ended ? 'Reopen Seminar' : 'End Seminar')
-                    ->modalDescription(fn (Seminar $record) => $record->is_ended 
-                        ? 'This will reopen registration for this seminar. Users will be able to register again.'
-                        : 'This will end the seminar and prevent new registrations. Existing registrations will remain.')
-                    ->action(function (Seminar $record) {
-                        $record->is_ended = !$record->is_ended;
-                        $record->save();
-                        Notification::make()
-                            ->title($record->is_ended ? 'Seminar ended' : 'Seminar reopened')
-                            ->body($record->is_ended 
-                                ? 'Registration for this seminar has been closed.'
-                                : 'Registration for this seminar has been reopened.')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('archive')
-                    ->label('Archive')
-                    ->icon('heroicon-o-archive-box')
-                    ->color('warning')
-                    ->visible(fn (Seminar $record) => !$record->trashed())
-                    ->requiresConfirmation()
-                    ->action(function (Seminar $record) {
-                        $record->delete();
-                        Notification::make()
-                            ->title('Seminar archived')
-                            ->body('The seminar has been archived successfully.')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('restore')
-                    ->label('Restore')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('success')
-                    ->visible(fn (Seminar $record) => $record->trashed())
-                    ->requiresConfirmation()
-                    ->action(function (Seminar $record) {
-                        $record->restore();
-                        Notification::make()
-                            ->title('Seminar restored')
-                            ->body('The seminar has been restored successfully.')
-                            ->success()
-                            ->send();
-                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
