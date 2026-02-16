@@ -358,6 +358,85 @@ class AttendeesRelationManager extends RelationManager
                             ->send();
                         $this->js("window.open('{$url}', '_blank')");
                     }),
+                Tables\Actions\Action::make('export_gnr_attendance_sheet')
+                    ->label('GNR Attendance')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->color('info')
+                    ->size('sm')
+                    ->visible(fn () => $this->ownerRecord)
+                    ->modalHeading('Select Attendees for GNR Attendance Sheet')
+                    ->modalDescription('Choose which day and checked-in attendees to include.')
+                    ->form(function (): array {
+                        $isMultiDay = $this->ownerRecord->isMultiDay();
+                        $dayOptions = $isMultiDay
+                            ? $this->ownerRecord->days->mapWithKeys(function ($day) {
+                                $label = 'Day ' . $day->day_number . ' - ' . $day->date->format('F j, Y');
+                                if ($day->start_time) {
+                                    $label .= ' ' . $day->formatted_time;
+                                }
+                                return [$day->id => $label];
+                            })
+                            : [];
+                        $form = [
+                            Forms\Components\Select::make('attendee_ids')
+                                ->label('Attendees')
+                                ->options(function () use ($isMultiDay) {
+                                    $query = $this->ownerRecord->attendees()
+                                        ->orderByRaw('COALESCE(NULLIF(last_name, ""), name) ASC')
+                                        ->orderBy('first_name');
+                                    if ($isMultiDay) {
+                                        $query->whereHas('checkIns', fn ($q) => $q->whereNotNull('checked_in_at'));
+                                    } else {
+                                        $query->whereNotNull('checked_in_at');
+                                    }
+                                    return $query->get()->mapWithKeys(fn ($a) => [$a->id => $a->full_name ?? $a->name]);
+                                })
+                                ->default(function () use ($isMultiDay) {
+                                    $query = $this->ownerRecord->attendees();
+                                    if ($isMultiDay) {
+                                        $query->whereHas('checkIns', fn ($q) => $q->whereNotNull('checked_in_at'));
+                                    } else {
+                                        $query->whereNotNull('checked_in_at');
+                                    }
+                                    return $query->pluck('id')->toArray();
+                                })
+                                ->multiple()
+                                ->searchable()
+                                ->preload()
+                                ->helperText('Leave empty to generate a blank sheet'),
+                            Forms\Components\Toggle::make('blank_signatures')
+                                ->label('Blank Signatures')
+                                ->helperText('Leave signature column blank (for handwritten signatures)')
+                                ->default(false),
+                        ];
+                        if ($isMultiDay && $dayOptions->isNotEmpty()) {
+                            array_unshift($form, Forms\Components\Select::make('day_id')
+                                ->label('Day')
+                                ->options($dayOptions)
+                                ->required()
+                                ->default(fn () => $this->ownerRecord->days->first()?->id)
+                                ->helperText('The date and venue will follow the selected day'));
+                        }
+                        return $form;
+                    })
+                    ->action(function (array $data) {
+                        $attendeeIds = $data['attendee_ids'] ?? [];
+                        $blankSignatures = $data['blank_signatures'] ?? false;
+                        $params = [
+                            'seminar' => $this->ownerRecord->id,
+                            'attendee_ids' => is_array($attendeeIds) ? implode(',', $attendeeIds) : $attendeeIds,
+                            'blank_signatures' => $blankSignatures ? '1' : '0',
+                        ];
+                        if ($this->ownerRecord->isMultiDay() && !empty($data['day_id'])) {
+                            $params['day_id'] = $data['day_id'];
+                        }
+                        $url = route('seminars.export-gnr-attendance-sheet', $params);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Opening GNR attendance sheet in new tab...')
+                            ->success()
+                            ->send();
+                        $this->js("window.open('{$url}', '_blank')");
+                    }),
                 Tables\Actions\Action::make('export_attendance_csv')
                     ->label('Export CSV')
                     ->icon('heroicon-o-table-cells')
@@ -411,8 +490,20 @@ class AttendeesRelationManager extends RelationManager
                         Forms\Components\Section::make('Basic Information')
                             ->schema([
                                 Forms\Components\Placeholder::make('name')
-                                    ->label('Name')
+                                    ->label('Full Name')
                                     ->content(fn ($record) => $record->full_name ?: $record->name),
+                                Forms\Components\Placeholder::make('first_name')
+                                    ->label('First Name')
+                                    ->content(fn ($record) => $record->first_name ?? '—'),
+                                Forms\Components\Placeholder::make('middle_name')
+                                    ->label('Middle Name')
+                                    ->content(fn ($record) => $record->middle_name ?? '—'),
+                                Forms\Components\Placeholder::make('last_name')
+                                    ->label('Last Name')
+                                    ->content(fn ($record) => $record->last_name ?? '—'),
+                                Forms\Components\Placeholder::make('suffix')
+                                    ->label('Suffix')
+                                    ->content(fn ($record) => $record->suffix ?? '—'),
                                 Forms\Components\Placeholder::make('type')
                                     ->label('Personnel Type')
                                     ->content(fn ($record) => $record->personnel_type === 'teaching'
@@ -534,6 +625,69 @@ class AttendeesRelationManager extends RelationManager
                                         : '—'),
                             ])
                             ->columns(2),
+                    ]),
+                Tables\Actions\EditAction::make()
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil-square')
+                    ->size('sm')
+                    ->modalHeading('Correct Attendee Information')
+                    ->modalDescription('Fix typos or errors in attendee details.')
+                    ->form([
+                        Forms\Components\Section::make('Name')
+                            ->schema([
+                                Forms\Components\TextInput::make('first_name')
+                                    ->label('First Name')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('middle_name')
+                                    ->label('Middle Name')
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('last_name')
+                                    ->label('Last Name')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('suffix')
+                                    ->label('Suffix (Jr., Sr., III, etc.)')
+                                    ->maxLength(50)
+                                    ->placeholder('Leave blank if none'),
+                            ])
+                            ->columns(2),
+                        Forms\Components\Section::make('Contact & Details')
+                            ->schema([
+                                Forms\Components\TextInput::make('email')
+                                    ->label('Email')
+                                    ->email()
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('mobile_phone')
+                                    ->label('Mobile Phone')
+                                    ->tel()
+                                    ->maxLength(20),
+                                Forms\Components\TextInput::make('position')
+                                    ->label('Position')
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('school_office_agency')
+                                    ->label('School/Office/Agency')
+                                    ->maxLength(255),
+                                Forms\Components\Select::make('personnel_type')
+                                    ->label('Personnel Type')
+                                    ->options(['teaching' => 'Teaching', 'non_teaching' => 'Non-Teaching'])
+                                    ->required(),
+                                Forms\Components\Select::make('sex')
+                                    ->label('Sex')
+                                    ->options(['male' => 'Male', 'female' => 'Female']),
+                            ])
+                            ->columns(2),
+                        Forms\Components\Section::make('PRC License')
+                            ->schema([
+                                Forms\Components\TextInput::make('prc_license_no')
+                                    ->label('PRC License No.')
+                                    ->maxLength(255),
+                                Forms\Components\DatePicker::make('prc_license_expiry')
+                                    ->label('PRC Expiry'),
+                            ])
+                            ->columns(2)
+                            ->collapsible(),
                     ]),
                 Tables\Actions\Action::make('check_in_manual')
                     ->label('Check In')

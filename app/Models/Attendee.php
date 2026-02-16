@@ -42,6 +42,27 @@ class Attendee extends Model
         'signature_metadata' => 'array',
     ];
 
+    public static function boot()
+    {
+        parent::boot();
+
+        static::saving(function (Attendee $attendee) {
+            if ($attendee->isDirty(['first_name', 'middle_name', 'last_name', 'suffix'])) {
+                $parts = array_filter([
+                    $attendee->first_name,
+                    $attendee->middle_name,
+                    $attendee->last_name,
+                ]);
+                $name = implode(' ', $parts);
+                $suffix = trim((string) ($attendee->suffix ?? ''));
+                if ($suffix !== '') {
+                    $name .= ', ' . ltrim($suffix, " \t\n\r\0\x0B,");
+                }
+                $attendee->name = $name ?: ($attendee->getOriginal('name') ?? '');
+            }
+        });
+    }
+
     public function seminar(): BelongsTo
     {
         return $this->belongsTo(Seminar::class);

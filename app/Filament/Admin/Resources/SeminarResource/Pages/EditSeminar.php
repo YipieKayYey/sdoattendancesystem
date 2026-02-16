@@ -119,6 +119,11 @@ class EditSeminar extends EditRecord
         }
     }
 
+    protected function getRedirectUrl(): string
+    {
+        return SeminarResource::getUrl('view', ['record' => $this->record]);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

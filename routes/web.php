@@ -97,6 +97,14 @@ Route::middleware(['auth'])->group(function () {
         return $service->generateAttendanceSheet($seminar, $attendeeIds, $blankSignatures, $dayId ? (int) $dayId : null);
     })->name('seminars.export-attendance-sheet');
 
+    Route::get('/admin/seminars/{seminar}/export-gnr-attendance-sheet', function (Seminar $seminar) {
+        $service = app(AttendanceSheetPdfService::class);
+        $attendeeIds = request()->query('attendee_ids');
+        $blankSignatures = request()->query('blank_signatures') === '1';
+        $dayId = request()->query('day_id');
+        return $service->generateGnrAttendanceSheet($seminar, $attendeeIds, $blankSignatures, $dayId ? (int) $dayId : null);
+    })->name('seminars.export-gnr-attendance-sheet');
+
     Route::get('/admin/seminars/{seminar}/export-attendance-csv', function (Seminar $seminar) {
         $service = app(AttendanceCsvService::class);
         $attendeeIds = request()->query('attendee_ids');

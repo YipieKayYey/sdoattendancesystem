@@ -127,7 +127,7 @@ class RegisterAttendee extends Component
         // Validate step 2 fields
         $this->validate([
             'mobilePhone' => ['required', 'string', 'max:20'],
-            'position' => ['nullable', 'string', 'max:255'],
+            'position' => ['required', 'string', 'max:255'],
             'noPrcLicense' => ['nullable', 'boolean'],
             'prcLicenseNo' => [
                 function ($attribute, $value, $fail) {
@@ -158,6 +158,7 @@ class RegisterAttendee extends Component
             'signatureData' => ['required', 'string'],
         ], [
             'mobilePhone.required' => 'Please enter your mobile phone number.',
+            'position.required' => 'Please enter your position.',
             'signatureConsent.required' => 'You must certify that the information is true and correct.',
             'signatureData.required' => 'Please provide your signature by drawing it on the signature pad.',
         ]);

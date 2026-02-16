@@ -230,9 +230,9 @@
                                 <!-- Position Field -->
                                 <div>
                                     <label for="position" class="block text-sm font-semibold text-gray-700 mb-2">
-                                        Position / Job Title
+                                        Position / Job Title <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="position" wire:model="position" placeholder="Enter your position or job title (optional)" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base">
+                                    <input type="text" id="position" wire:model="position" placeholder="Enter your position or job title" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base" required>
                                     @error('position')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                                 </div>
 
