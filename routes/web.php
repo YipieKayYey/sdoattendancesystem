@@ -86,7 +86,8 @@ Route::middleware(['auth'])->group(function () {
         $service = app(RegistrationSheetPdfService::class);
         $attendeeIds = request()->query('attendee_ids');
         $blankSignatures = request()->query('blank_signatures') === '1';
-        return $service->generateRegistrationSheet($seminar, $attendeeIds, $blankSignatures);
+        $dayId = request()->query('day_id');
+        return $service->generateRegistrationSheet($seminar, $attendeeIds, $blankSignatures, $dayId ? (int) $dayId : null);
     })->name('seminars.export-registration-sheet');
 
     Route::get('/admin/seminars/{seminar}/export-attendance-sheet', function (Seminar $seminar) {

@@ -237,39 +237,63 @@ class AttendeesRelationManager extends RelationManager
                     ->color('success')
                     ->size('sm')
                     ->modalHeading('Select Attendees for Registration Sheet')
-                    ->modalDescription('Choose which attendees to include in the registration sheet export.')
-                    ->form([
-                        Forms\Components\Select::make('attendee_ids')
-                            ->label('Attendees')
-                            ->options(function () {
-                                return $this->ownerRecord->attendees()
-                                    ->orderBy('created_at')
-                                    ->get()
-                                    ->mapWithKeys(function ($attendee) {
-                                        $name = $attendee->full_name ?: $attendee->name;
-                                        return [$attendee->id => $name];
-                                    });
+                    ->modalDescription('Choose which day (for date/venue) and attendees to include.')
+                    ->form(function (): array {
+                        $isMultiDay = $this->ownerRecord->isMultiDay();
+                        $dayOptions = $isMultiDay
+                            ? $this->ownerRecord->days->mapWithKeys(function ($day) {
+                                $label = 'Day ' . $day->day_number . ' - ' . $day->date->format('F j, Y');
+                                $venue = $day->venue ?? $this->ownerRecord->venue ?? 'N/A';
+                                $label .= ' / ' . $venue;
+                                return [$day->id => $label];
                             })
-                            ->default(function () {
-                                return $this->ownerRecord->attendees()->pluck('id')->toArray();
-                            })
-                            ->required()
-                            ->multiple()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Toggle::make('blank_signatures')
-                            ->label('Blank Signatures')
-                            ->helperText('Leave signature column blank (for agencies that don\'t allow e-signatures)')
-                            ->default(false),
-                    ])
+                            : [];
+                        $form = [
+                            Forms\Components\Select::make('attendee_ids')
+                                ->label('Attendees')
+                                ->options(function () {
+                                    return $this->ownerRecord->attendees()
+                                        ->orderBy('created_at')
+                                        ->get()
+                                        ->mapWithKeys(function ($attendee) {
+                                            $name = $attendee->full_name ?: $attendee->name;
+                                            return [$attendee->id => $name];
+                                        });
+                                })
+                                ->default(function () {
+                                    return $this->ownerRecord->attendees()->pluck('id')->toArray();
+                                })
+                                ->required()
+                                ->multiple()
+                                ->searchable()
+                                ->preload(),
+                            Forms\Components\Toggle::make('blank_signatures')
+                                ->label('Blank Signatures')
+                                ->helperText('Leave signature column blank (for agencies that don\'t allow e-signatures)')
+                                ->default(false),
+                        ];
+                        if ($isMultiDay && $dayOptions->isNotEmpty()) {
+                            array_unshift($form, Forms\Components\Select::make('day_id')
+                                ->label('Day (Date & Venue)')
+                                ->options($dayOptions)
+                                ->required()
+                                ->default(fn () => $this->ownerRecord->days->first()?->id)
+                                ->helperText('Date and venue in the sheet header will use the selected day'));
+                        }
+                        return $form;
+                    })
                     ->action(function (array $data) {
                         $attendeeIds = $data['attendee_ids'];
                         $blankSignatures = $data['blank_signatures'] ?? false;
-                        $url = route('seminars.export-registration-sheet', [
+                        $params = [
                             'seminar' => $this->ownerRecord->id,
                             'attendee_ids' => implode(',', $attendeeIds),
                             'blank_signatures' => $blankSignatures ? '1' : '0',
-                        ]);
+                        ];
+                        if ($this->ownerRecord->isMultiDay() && !empty($data['day_id'])) {
+                            $params['day_id'] = $data['day_id'];
+                        }
+                        $url = route('seminars.export-registration-sheet', $params);
                         \Filament\Notifications\Notification::make()
                             ->title('Opening registration sheet in new tab...')
                             ->success()

@@ -348,10 +348,10 @@
                 </tr>
                 <tr>
                     <td>
-                        Date : {{ $seminar->date->format('F j, Y') }}
+                        Date : {{ ($day ?? null) ? $day->date->format('F j, Y') : $seminar->date->format('F j, Y') }}
                     </td>
                     <td>
-                        Venue : {{ $seminar->venue ?? 'N/A' }}
+                        Venue : {{ ($day ?? null) ? ($day->venue ?? 'N/A') : ($seminar->venue ?? 'N/A') }}
                     </td>
                 </tr>
             </table>
