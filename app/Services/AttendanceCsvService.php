@@ -48,7 +48,13 @@ class AttendanceCsvService
             
             // Check if multi-day
             $isMultiDay = $seminar->isMultiDay();
-            $days = $isMultiDay ? $seminar->days : collect();
+            $days = $isMultiDay ? $seminar->days()->orderBy('day_number')->get() : collect();
+            
+            // Days for date/venue columns: multi-day uses actual days; single-day uses Day 1 or seminar
+            $day1 = $seminar->days()->orderBy('day_number')->first();
+            $daysForDateVenue = $days->isNotEmpty()
+                ? $days
+                : collect([$day1 ?? (object)['day_number' => 1, 'date' => $seminar->date, 'venue' => $seminar->venue ?? 'N/A']]);
             
             // Build headers
             $headers = [
@@ -58,13 +64,11 @@ class AttendanceCsvService
             ];
             
             if ($isMultiDay) {
-                // Add per-day columns
                 foreach ($days as $day) {
                     $headers[] = "Day {$day->day_number} Check-in";
                     $headers[] = "Day {$day->day_number} Check-out";
                 }
             } else {
-                // Single day columns
                 $headers[] = 'Checked In At';
                 $headers[] = 'Checked Out At';
             }
@@ -86,9 +90,12 @@ class AttendanceCsvService
                 'Signed At',
                 'Ticket Hash',
                 'Seminar Title',
-                'Seminar Date',
-                'Seminar Venue',
             ]);
+            
+            foreach ($daysForDateVenue as $day) {
+                $headers[] = "Seminar Date Day {$day->day_number}";
+                $headers[] = "Seminar Venue Day {$day->day_number}";
+            }
             
             fputcsv($file, $headers);
 
@@ -160,9 +167,12 @@ class AttendanceCsvService
                     $signedAt,
                     $attendee->ticket_hash ?: 'N/A',
                     $seminar->title ?: 'N/A',
-                    $seminar->date ? $seminar->date->format('Y-m-d') : 'N/A',
-                    $seminar->venue ?: 'N/A',
                 ]);
+                
+                foreach ($daysForDateVenue as $d) {
+                    $row[] = $d->date ? \Carbon\Carbon::parse($d->date)->format('Y-m-d') : 'N/A';
+                    $row[] = $d->venue ?? 'N/A';
+                }
                 
                 fputcsv($file, $row);
             }
