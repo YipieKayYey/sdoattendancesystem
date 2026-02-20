@@ -87,75 +87,93 @@
             <!-- Personnel Type Breakdown -->
             <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personnel Type Breakdown</h3>
-                <div class="space-y-3">
-                    @foreach($this->getAnalyticsData()['personnel_breakdown'] as $type => $count)
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ ucfirst($type) }}</span>
-                            <div class="flex items-center">
-                                <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
-                                    <div class="bg-blue-600 dark:bg-blue-500 h-2 rounded-full" style="width: {{ ($count / $this->getAnalyticsData()['total_registrations']) * 100 }}%"></div>
+                @if(!empty($this->getAnalyticsData()['personnel_breakdown']))
+                    <div class="space-y-3">
+                        @foreach($this->getAnalyticsData()['personnel_breakdown'] as $type => $count)
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ ucfirst($type) }}</span>
+                                <div class="flex items-center">
+                                    @php($total = $this->getAnalyticsData()['total_registrations'])
+                                    <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
+                                        <div class="bg-blue-600 dark:bg-blue-500 h-2 rounded-full" style="width: {{ $total > 0 ? ($count / $total) * 100 : 0 }}%"></div>
+                                    </div>
+                                    <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
                                 </div>
-                                <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
                             </div>
-                        </div>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No personnel type data available.</p>
+                @endif
             </div>
 
             <!-- Gender Breakdown -->
             <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Gender Distribution</h3>
-                <div class="space-y-3">
-                    @foreach($this->getAnalyticsData()['gender_breakdown'] as $gender => $count)
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ ucfirst($gender) }}</span>
-                            <div class="flex items-center">
-                                <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
-                                    <div class="bg-green-600 dark:bg-green-500 h-2 rounded-full" style="width: {{ ($count / $this->getAnalyticsData()['total_registrations']) * 100 }}%"></div>
+                @if(!empty($this->getAnalyticsData()['gender_breakdown']))
+                    <div class="space-y-3">
+                        @foreach($this->getAnalyticsData()['gender_breakdown'] as $gender => $count)
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ ucfirst($gender) }}</span>
+                                <div class="flex items-center">
+                                    @php($total = $this->getAnalyticsData()['total_registrations'])
+                                    <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
+                                        <div class="bg-green-600 dark:bg-green-500 h-2 rounded-full" style="width: {{ $total > 0 ? ($count / $total) * 100 : 0 }}%"></div>
+                                    </div>
+                                    <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
                                 </div>
-                                <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
                             </div>
-                        </div>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No gender data available.</p>
+                @endif
             </div>
 
             <!-- Top Schools -->
             <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Participating Schools</h3>
-                <div class="space-y-3">
-                    @foreach($this->getAnalyticsData()['top_schools'] as $school => $count)
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $school }}</span>
-                            <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
-                        </div>
-                    @endforeach
-                </div>
+                @if(!empty($this->getAnalyticsData()['top_schools']))
+                    <div class="space-y-3">
+                        @foreach($this->getAnalyticsData()['top_schools'] as $school => $count)
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $school }}</span>
+                                <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No school/office data available for this seminar.</p>
+                @endif
             </div>
 
             <!-- Daily Attendance (Multi-Day) -->
             @if($this->getAnalyticsData()['is_multi_day'])
                 <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Attendance</h3>
-                    <div class="space-y-3">
-                        @foreach($this->getAnalyticsData()['daily_attendance'] as $day)
-                            <div class="border-l-4 border-blue-500 dark:border-blue-400 pl-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-900 dark:text-white">Day {{ $day['day'] }} - {{ $day['date'] }}</span>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span class="text-gray-500 dark:text-gray-400">Checked In:</span>
-                                        <span class="ml-2 font-semibold text-green-600 dark:text-green-400">{{ $day['checked_in'] }}</span>
+                    @if(!empty($this->getAnalyticsData()['daily_attendance']))
+                        <div class="space-y-3">
+                            @foreach($this->getAnalyticsData()['daily_attendance'] as $day)
+                                <div class="border-l-4 border-blue-500 dark:border-blue-400 pl-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white">Day {{ $day['day'] }} - {{ $day['date'] }}</span>
                                     </div>
-                                    <div>
-                                        <span class="text-gray-500 dark:text-gray-400">Checked Out:</span>
-                                        <span class="ml-2 font-semibold text-purple-600 dark:text-purple-400">{{ $day['checked_out'] }}</span>
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span class="text-gray-500 dark:text-gray-400">Checked In:</span>
+                                            <span class="ml-2 font-semibold text-green-600 dark:text-green-400">{{ $day['checked_in'] }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 dark:text-gray-400">Checked Out:</span>
+                                            <span class="ml-2 font-semibold text-purple-600 dark:text-purple-400">{{ $day['checked_out'] }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No daily attendance data available.</p>
+                    @endif
                 </div>
             @endif
         </div>

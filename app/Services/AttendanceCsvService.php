@@ -145,7 +145,7 @@ class AttendanceCsvService
                     : 'N/A';
                 
                 $sex = $attendee->sex ? ucfirst($attendee->sex) : 'N/A';
-                $schoolOfficeAgency = $attendee->school_office_agency ?: 'N/A';
+                $schoolOfficeAgency = $attendee->school_office_agency_display !== '—' ? $attendee->school_office_agency_display : 'N/A';
                 $registeredAt = $attendee->created_at 
                     ? $attendee->created_at->format('Y-m-d H:i:s') 
                     : 'N/A';

@@ -3,76 +3,31 @@
 namespace App\Services;
 
 use App\Models\Seminar;
-use App\Models\Attendee;
-use App\Models\AttendeeCheckIn;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\DB;
 
 class AnalyticsPdfService
 {
     public function generateAnalyticsReport(Seminar $seminar)
     {
-        // Get analytics data
-        $totalRegistrations = $seminar->attendees()->count();
-        $totalCheckedIn = $seminar->attendees()->whereNotNull('checked_in_at')->count();
-        $totalCheckedOut = $seminar->attendees()->whereNotNull('checked_out_at')->count();
-        
-        $personnelBreakdown = $seminar->attendees()
-            ->selectRaw('personnel_type, COUNT(*) as count')
-            ->groupBy('personnel_type')
-            ->pluck('count', 'personnel_type')
-            ->toArray();
-        
-        $genderBreakdown = $seminar->attendees()
-            ->selectRaw('sex, COUNT(*) as count')
-            ->whereNotNull('sex')
-            ->groupBy('sex')
-            ->pluck('count', 'sex')
-            ->toArray();
-        
-        $topSchools = $seminar->attendees()
-            ->selectRaw('school_office_agency, COUNT(*) as count')
-            ->whereNotNull('school_office_agency')
-            ->groupBy('school_office_agency')
-            ->orderByDesc('count')
-            ->limit(10)
-            ->pluck('count', 'school_office_agency')
-            ->toArray();
-        
-        // Daily attendance for multi-day seminars
-        $dailyAttendance = [];
-        if ($seminar->isMultiDay()) {
-            foreach ($seminar->days as $day) {
-                $checkedInCount = AttendeeCheckIn::where('seminar_day_id', $day->id)
-                    ->whereNotNull('checked_in_at')
-                    ->count();
-                $checkedOutCount = AttendeeCheckIn::where('seminar_day_id', $day->id)
-                    ->whereNotNull('checked_out_at')
-                    ->count();
-                
-                $dailyAttendance[] = [
-                    'day' => $day->day_number,
-                    'date' => $day->date->format('F j, Y'),
-                    'start_time' => $day->start_time,
-                    'venue' => $day->venue,
-                    'checked_in' => $checkedInCount,
-                    'checked_out' => $checkedOutCount,
-                ];
-            }
-        }
-        
+        $analytics = app(SeminarAnalyticsService::class)->getAnalyticsData($seminar, topSchoolsLimit: 10);
+
+        // Use date_long for PDF (full date format)
+        $dailyAttendance = collect($analytics['daily_attendance'])->map(function ($day) {
+            return array_merge($day, ['date' => $day['date_long'] ?? $day['date']]);
+        })->all();
+
         $data = [
             'seminar' => $seminar,
-            'total_registrations' => $totalRegistrations,
-            'total_checked_in' => $totalCheckedIn,
-            'total_checked_out' => $totalCheckedOut,
-            'check_in_rate' => $totalRegistrations > 0 ? round(($totalCheckedIn / $totalRegistrations) * 100, 1) : 0,
-            'check_out_rate' => $totalCheckedIn > 0 ? round(($totalCheckedOut / $totalCheckedIn) * 100, 1) : 0,
-            'personnel_breakdown' => $personnelBreakdown,
-            'gender_breakdown' => $genderBreakdown,
-            'top_schools' => $topSchools,
+            'total_registrations' => $analytics['total_registrations'],
+            'total_checked_in' => $analytics['total_checked_in'],
+            'total_checked_out' => $analytics['total_checked_out'],
+            'check_in_rate' => $analytics['check_in_rate'],
+            'check_out_rate' => $analytics['check_out_rate'],
+            'personnel_breakdown' => $analytics['personnel_breakdown'],
+            'gender_breakdown' => $analytics['gender_breakdown'],
+            'top_schools' => $analytics['top_schools'],
             'daily_attendance' => $dailyAttendance,
-            'is_multi_day' => $seminar->isMultiDay(),
+            'is_multi_day' => $analytics['is_multi_day'],
             'generated_at' => now()->format('F j, Y g:i A'),
         ];
         

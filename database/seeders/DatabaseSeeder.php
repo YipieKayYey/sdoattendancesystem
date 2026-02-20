@@ -16,6 +16,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed schools (alphabetical list)
+        $this->call([
+            SchoolSeeder::class,
+        ]);
+
         // Seed seminars with multi-day support
         $this->call([
             SeminarSeeder::class,
@@ -34,6 +39,11 @@ class DatabaseSeeder extends Seeder
         // Ensure all seminars have Day 1 records (needed for multi-day support)
         $this->call([
             EnsureSeminarDaysSeeder::class,
+        ]);
+
+        // Analytics test: multi-day seminar with attendees and check-ins
+        $this->call([
+            AnalyticsTestSeminarSeeder::class,
         ]);
     }
 }

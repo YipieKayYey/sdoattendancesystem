@@ -21,6 +21,8 @@ class Attendee extends Model
         'last_name',
         'suffix',
         'sex',
+        'school_id',
+        'school_other',
         'school_office_agency',
         'mobile_phone',
         'prc_license_no',
@@ -47,6 +49,16 @@ class Attendee extends Model
         parent::boot();
 
         static::saving(function (Attendee $attendee) {
+            // Normalize school fields when "other" is chosen
+            if ($attendee->school_id === 'other' || $attendee->school_id === '') {
+                $attendee->school_id = null;
+                $attendee->school_office_agency = $attendee->school_other;
+            } elseif ($attendee->school_id && is_numeric($attendee->school_id)) {
+                $attendee->school_other = null;
+                $school = \App\Models\School::find((int) $attendee->school_id);
+                $attendee->school_office_agency = $school?->name ?? $attendee->school_office_agency;
+            }
+
             if ($attendee->isDirty(['first_name', 'middle_name', 'last_name', 'suffix'])) {
                 $parts = array_filter([
                     $attendee->first_name,
@@ -66,6 +78,22 @@ class Attendee extends Model
     public function seminar(): BelongsTo
     {
         return $this->belongsTo(Seminar::class);
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function getSchoolOfficeAgencyDisplayAttribute(): string
+    {
+        if ($this->school_id && $this->school) {
+            return $this->school->name;
+        }
+        if (!empty($this->school_other)) {
+            return $this->school_other;
+        }
+        return $this->school_office_agency ?? '—';
     }
 
     public function checkIns(): \Illuminate\Database\Eloquent\Relations\HasMany

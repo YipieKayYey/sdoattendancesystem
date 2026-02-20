@@ -181,10 +181,19 @@ class ViewSeminar extends ViewRecord
                                     ->content(fn ($record) => $record->attendees()->count() . ' / ' . ($record->is_open ? 'Unlimited' : $record->capacity)),
                                 Forms\Components\Placeholder::make('checked_in_count')
                                     ->label('Checked In')
-                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_in_at')->count()),
+                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_in_at')->count())
+                                    ->visible(fn ($record) => !$record->is_multi_day),
                                 Forms\Components\Placeholder::make('checked_out_count')
                                     ->label('Checked Out')
-                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_out_at')->count()),
+                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_out_at')->count())
+                                    ->visible(fn ($record) => !$record->is_multi_day),
+                                Forms\Components\ViewField::make('attendance_by_day')
+                                    ->label('Attendance by Day')
+                                    ->view('components.attendance-by-day-table')
+                                    ->viewData(['seminar' => $this->record])
+                                    ->visible(fn ($record) => $record->is_multi_day && $record->days()->exists())
+                                    ->columnSpanFull()
+                                    ->extraAttributes(['class' => 'min-w-0']),
                                 Forms\Components\Placeholder::make('available_spots')
                                     ->label('Available Spots')
                                     ->content(fn ($record) => $record->is_open ? 'Unlimited' : max(0, $record->capacity - $record->attendees()->count()))

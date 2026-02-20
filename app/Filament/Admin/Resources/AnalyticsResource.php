@@ -4,8 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\AnalyticsResource\Pages;
 use App\Models\Seminar;
-use App\Models\Attendee;
-use App\Models\AttendeeCheckIn;
+use App\Services\SeminarAnalyticsService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -57,12 +56,13 @@ class AnalyticsResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('checked_in_count')
                     ->label('Checked In')
-                    ->getStateUsing(fn ($record) => $record->attendees()->whereNotNull('checked_in_at')->count())
-                    ->sortable(query: function (Builder $query, string $direction): Builder {
-                        return $query->withCount(['attendees as checked_in_count' => function ($query) {
-                            $query->whereNotNull('checked_in_at');
-                        }])->orderBy('checked_in_count', $direction);
-                    }),
+                    ->getStateUsing(fn ($record) => app(SeminarAnalyticsService::class)->getCheckInCountsOnly($record)[0])
+                    ->sortable(false),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Type')
+                    ->badge()
+                    ->getStateUsing(fn ($record) => $record->isMultiDay() ? 'Multi-day' : 'Single day')
+                    ->color(fn (string $state) => $state === 'Multi-day' ? 'info' : 'gray'),
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),

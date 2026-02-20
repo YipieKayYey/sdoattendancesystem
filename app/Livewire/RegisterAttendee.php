@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Attendee;
+use App\Models\School;
 use App\Models\Seminar;
 use App\Services\SignatureSecurityService;
 use Illuminate\Support\Str;
@@ -21,7 +22,9 @@ class RegisterAttendee extends Component
     public string $lastName = '';
     public string $suffix = '';
     public string $sex = '';
-    public string $schoolOfficeAgency = '';
+    /** @var int|string|null */
+    public $schoolId = null;
+    public string $schoolOther = '';
     public string $email = '';
     public string $mobilePhone = '';
     public string $position = '';
@@ -79,7 +82,8 @@ class RegisterAttendee extends Component
                 },
             ],
             'sex' => ['required', 'in:male,female'],
-            'schoolOfficeAgency' => ['required', 'string', 'max:255'],
+            'schoolId' => ['required'],
+            'schoolOther' => ['required_if:schoolId,other', 'nullable', 'string', 'max:255'],
             'email' => [
                 'required',
                 'email',
@@ -102,7 +106,8 @@ class RegisterAttendee extends Component
             'email.email' => 'Please enter a valid email address.',
             'sex.required' => 'Please select your sex.',
             'sex.in' => 'Please select either Male or Female.',
-            'schoolOfficeAgency.required' => 'Please enter your School/Office/Agency.',
+            'schoolId.required' => 'Please select your School/Office/Agency.',
+            'schoolOther.required_if' => 'Please enter your School/Office/Agency when selecting Others.',
         ]);
 
         $this->currentStep = 2;
@@ -111,6 +116,23 @@ class RegisterAttendee extends Component
     public function previousStep()
     {
         $this->currentStep = 1;
+    }
+
+    protected function getSchoolOfficeAgencyValue(): string
+    {
+        if ($this->schoolId === 'other') {
+            return $this->schoolOther;
+        }
+        if ($this->schoolId && $this->schoolId !== 'other') {
+            $school = School::find((int) $this->schoolId);
+            return $school ? $school->name : '';
+        }
+        return '';
+    }
+
+    public function getSchoolsProperty()
+    {
+        return School::orderBy('name')->pluck('name', 'id');
     }
 
     public function updatedNoPrcLicense($value)
@@ -134,6 +156,17 @@ class RegisterAttendee extends Component
                     // Required for teaching personnel unless they check "no license"
                     if ($this->personnelType === 'teaching' && !$this->noPrcLicense && empty($value)) {
                         $fail('PRC License Number is required for teaching personnel, or check "I don\'t have a PRC license".');
+                        return;
+                    }
+                    // If provided, must be numeric and exactly 7 digits
+                    if (!empty($value)) {
+                        if (!preg_match('/^\d+$/', $value)) {
+                            $fail('PRC License Number must contain numbers only.');
+                            return;
+                        }
+                        if (strlen($value) !== 7) {
+                            $fail('PRC License Number must be exactly 7 digits.');
+                        }
                     }
                 },
                 'nullable',
@@ -208,7 +241,9 @@ class RegisterAttendee extends Component
             'last_name' => $this->lastName,
             'suffix' => $suffix ?: null,
             'sex' => $this->sex,
-            'school_office_agency' => $this->schoolOfficeAgency,
+            'school_id' => $this->schoolId === 'other' || $this->schoolId === '' ? null : (int) $this->schoolId,
+            'school_other' => $this->schoolId === 'other' ? $this->schoolOther : null,
+            'school_office_agency' => $this->getSchoolOfficeAgencyValue(),
             'mobile_phone' => $this->mobilePhone,
             'prc_license_no' => $this->noPrcLicense ? null : ($this->prcLicenseNo ?: null),
             'prc_license_expiry' => $this->noPrcLicense ? null : ($this->prcLicenseExpiry ?: null),

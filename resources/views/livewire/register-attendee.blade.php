@@ -63,7 +63,7 @@
                     @else
                         <!-- Registration Count -->
                         <div class="mb-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <span class="text-gray-700 font-medium text-sm sm:text-base">Number of Registrations : </span>
+                            <span class="text-gray-700 font-medium text-sm sm:text-base">Number of Registered Attendees : </span>
                             <span class="text-blue-700 font-bold text-base sm:text-lg">{{ $seminar->registered_count }}</span>
                         </div>
 
@@ -196,11 +196,24 @@
 
                                 <!-- School/Office/Agency Field -->
                                 <div>
-                                    <label for="schoolOfficeAgency" class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <label for="schoolId" class="block text-sm font-semibold text-gray-700 mb-2">
                                         School/Office/Agency <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="schoolOfficeAgency" wire:model="schoolOfficeAgency" placeholder="Enter your school, office, or agency" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base" required>
-                                    @error('schoolOfficeAgency')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                                    <select id="schoolId" wire:model.live="schoolId" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base" required>
+                                        <option value="">Choose your school, office, or agency...</option>
+                                        @foreach($this->schools as $id => $name)
+                                            <option value="{{ $id }}">{{ $name }}</option>
+                                        @endforeach
+                                        <option value="other">Others (please specify below)</option>
+                                    </select>
+                                    @if($schoolId === 'other')
+                                        <div class="mt-3">
+                                            <label for="schoolOther" class="block text-sm font-medium text-gray-600 mb-1">Please specify</label>
+                                            <input type="text" id="schoolOther" wire:model="schoolOther" placeholder="Enter your school, office, or agency" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base" required>
+                                        </div>
+                                    @endif
+                                    @error('schoolId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                                    @error('schoolOther')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                                 </div>
 
                                 <!-- Email Field -->
@@ -257,7 +270,7 @@
                                                     <span class="text-red-500">*</span>
                                                 @endif
                                             </label>
-                                            <input type="text" id="prcLicenseNo" wire:model="prcLicenseNo" placeholder="Enter PRC License Number" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base" {{ $personnelType === 'teaching' ? 'required' : '' }}>
+                                            <input type="text" id="prcLicenseNo" wire:model="prcLicenseNo" placeholder="7 digits only" inputmode="numeric" maxlength="7" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base" {{ $personnelType === 'teaching' ? 'required' : '' }}>
                                             @error('prcLicenseNo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                         <div>

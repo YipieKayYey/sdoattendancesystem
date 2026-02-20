@@ -215,29 +215,37 @@
         <!-- Personnel Type Breakdown -->
         <div class="section">
             <div class="section-title">Personnel Type Breakdown</div>
-            @foreach($personnel_breakdown as $type => $count)
-                <div class="breakdown-item">
-                    <div class="breakdown-label">{{ ucfirst($type) }}</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ ($count / $total_registrations) * 100 }}%"></div>
+            @if(!empty($personnel_breakdown))
+                @foreach($personnel_breakdown as $type => $count)
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">{{ ucfirst($type) }}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ $total_registrations > 0 ? ($count / $total_registrations) * 100 : 0 }}%"></div>
+                        </div>
+                        <div class="breakdown-value">{{ $count }} ({{ $total_registrations > 0 ? round(($count / $total_registrations) * 100, 1) : 0 }}%)</div>
                     </div>
-                    <div class="breakdown-value">{{ $count }} ({{ round(($count / $total_registrations) * 100, 1) }}%)</div>
-                </div>
-            @endforeach
+                @endforeach
+            @else
+                <p class="text-gray-600" style="padding: 8px 0;">No personnel type data available.</p>
+            @endif
         </div>
 
         <!-- Gender Breakdown -->
         <div class="section">
             <div class="section-title">Gender Distribution</div>
-            @foreach($gender_breakdown as $gender => $count)
-                <div class="breakdown-item">
-                    <div class="breakdown-label">{{ ucfirst($gender) }}</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ ($count / $total_registrations) * 100 }}%; background: #059669;"></div>
+            @if(!empty($gender_breakdown))
+                @foreach($gender_breakdown as $gender => $count)
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">{{ ucfirst($gender) }}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ $total_registrations > 0 ? ($count / $total_registrations) * 100 : 0 }}%; background: #059669;"></div>
+                        </div>
+                        <div class="breakdown-value">{{ $count }} ({{ $total_registrations > 0 ? round(($count / $total_registrations) * 100, 1) : 0 }}%)</div>
                     </div>
-                    <div class="breakdown-value">{{ $count }} ({{ round(($count / $total_registrations) * 100, 1) }}%)</div>
-                </div>
-            @endforeach
+                @endforeach
+            @else
+                <p class="text-gray-600" style="padding: 8px 0;">No gender data available.</p>
+            @endif
         </div>
     </div>
 
@@ -247,62 +255,70 @@
     <!-- Top Schools -->
     <div class="section">
         <div class="section-title">Top Participating Schools/Offices</div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>School/Office/Agency</th>
-                    <th class="text-center">Count</th>
-                    <th class="text-right">Percentage</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($top_schools as $school => $count)
+        @if(!empty($top_schools))
+            <table class="table">
+                <thead>
                     <tr>
-                        <td>{{ $school }}</td>
-                        <td class="text-center">{{ $count }}</td>
-                        <td class="text-right">{{ round(($count / $total_registrations) * 100, 1) }}%</td>
+                        <th>School/Office/Agency</th>
+                        <th class="text-center">Count</th>
+                        <th class="text-right">Percentage</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach($top_schools as $school => $count)
+                        <tr>
+                            <td>{{ $school }}</td>
+                            <td class="text-center">{{ $count }}</td>
+                            <td class="text-right">{{ $total_registrations > 0 ? round(($count / $total_registrations) * 100, 1) . '%' : '0%' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p class="text-gray-600" style="padding: 12px 0;">No school/office data available for this seminar.</p>
+        @endif
     </div>
 
     <!-- Daily Attendance (Multi-Day) -->
     @if($is_multi_day)
         <div class="section">
             <div class="section-title">Daily Attendance Breakdown</div>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Day</th>
-                        <th>Date</th>
-                        <th>Start Time</th>
-                        <th>Venue</th>
-                        <th class="text-center">Checked In</th>
-                        <th class="text-center">Checked Out</th>
-                        <th class="text-right">Check-in Rate</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($daily_attendance as $day)
+            @if(!empty($daily_attendance))
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>Day {{ $day['day'] }}</td>
-                            <td>{{ $day['date'] }}</td>
-                            <td>{{ $day['start_time'] ?? 'N/A' }}</td>
-                            <td>{{ $day['venue'] ?? 'N/A' }}</td>
-                            <td class="text-center">{{ $day['checked_in'] }}</td>
-                            <td class="text-center">{{ $day['checked_out'] }}</td>
-                            <td class="text-right">{{ $total_registrations > 0 ? round(($day['checked_in'] / $total_registrations) * 100, 1) . '%' : '0%' }}</td>
+                            <th>Day</th>
+                            <th>Date</th>
+                            <th>Start Time</th>
+                            <th>Venue</th>
+                            <th class="text-center">Checked In</th>
+                            <th class="text-center">Checked Out</th>
+                            <th class="text-right">Check-in Rate</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach($daily_attendance as $day)
+                            <tr>
+                                <td>Day {{ $day['day'] }}</td>
+                                <td>{{ $day['date'] }}</td>
+                                <td>{{ $day['start_time'] ?? 'N/A' }}</td>
+                                <td>{{ $day['venue'] ?? 'N/A' }}</td>
+                                <td class="text-center">{{ $day['checked_in'] }}</td>
+                                <td class="text-center">{{ $day['checked_out'] }}</td>
+                                <td class="text-right">{{ $total_registrations > 0 ? round(($day['checked_in'] / $total_registrations) * 100, 1) . '%' : '0%' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <p class="text-gray-600" style="padding: 12px 0;">No daily attendance data available.</p>
+            @endif
         </div>
     @endif
 
     <!-- Footer -->
     <div class="footer">
-        <p>© {{ date('Y') }} DepEd SDO Balanga City - Attedance Monitoring System</p>
+        <p>© {{ date('Y') }} DepEd SDO Balanga City - Attendance Monitoring System</p>
         <p>Report generated on {{ $generated_at }} • Total Records: {{ $total_registrations }}</p>
     </div>
 </body>

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\SeminarResource\RelationManagers;
 
 use App\Models\AttendeeCheckIn;
+use App\Models\School;
 use App\Models\SeminarDay;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,6 +25,14 @@ class AttendeesRelationManager extends RelationManager
                     ->required()
                     ->maxLength(255),
             ]);
+    }
+
+    protected function getSelectedDayId(): ?int
+    {
+        $state = $this->getTableFilterState('day_id');
+        $value = $state['value'] ?? $state['day_id'] ?? null;
+
+        return $value ? (int) $value : null;
     }
 
     protected function getTableColumns(): array
@@ -49,8 +58,43 @@ class AttendeesRelationManager extends RelationManager
                 ->placeholder('—'),
         ];
 
-        // For multi-day seminars, show per-day columns
-        if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
+        $selectedDayId = $this->getSelectedDayId();
+        $isMultiDay = $this->ownerRecord && $this->ownerRecord->isMultiDay();
+
+        // When a day is selected (multi-day), show only that day's columns
+        if ($isMultiDay && $selectedDayId) {
+            $day = SeminarDay::find($selectedDayId);
+            if ($day && $day->seminar_id === $this->ownerRecord->id) {
+                $columns[] = Tables\Columns\TextColumn::make("day_{$day->id}_checkin")
+                    ->label("Day {$day->day_number} Check-in")
+                    ->getStateUsing(function ($record) use ($day) {
+                        $checkIn = AttendeeCheckIn::where('attendee_id', $record->id)
+                            ->where('seminar_day_id', $day->id)
+                            ->whereNotNull('checked_in_at')
+                            ->first();
+                        return $checkIn ? $checkIn->checked_in_at->format('M j, Y g:i A') : '—';
+                    })
+                    ->badge()
+                    ->color(fn ($state) => $state !== '—' ? 'success' : 'gray')
+                    ->icon(fn ($state) => $state !== '—' ? 'heroicon-o-check-circle' : null)
+                    ->sortable(false);
+
+                $columns[] = Tables\Columns\TextColumn::make("day_{$day->id}_checkout")
+                    ->label("Day {$day->day_number} Check-out")
+                    ->getStateUsing(function ($record) use ($day) {
+                        $checkIn = AttendeeCheckIn::where('attendee_id', $record->id)
+                            ->where('seminar_day_id', $day->id)
+                            ->whereNotNull('checked_out_at')
+                            ->first();
+                        return $checkIn ? $checkIn->checked_out_at->format('M j, Y g:i A') : '—';
+                    })
+                    ->badge()
+                    ->color(fn ($state) => $state !== '—' ? 'warning' : 'gray')
+                    ->icon(fn ($state) => $state !== '—' ? 'heroicon-o-arrow-right-on-rectangle' : null)
+                    ->sortable(false);
+            }
+        } elseif ($isMultiDay) {
+            // Multi-day, no day selected: show all days' columns
             $days = $this->ownerRecord->days()->orderBy('day_number')->get();
             foreach ($days as $day) {
                 $columns[] = Tables\Columns\TextColumn::make("day_{$day->id}_checkin")
@@ -66,7 +110,7 @@ class AttendeesRelationManager extends RelationManager
                     ->color(fn ($state) => $state !== '—' ? 'success' : 'gray')
                     ->icon(fn ($state) => $state !== '—' ? 'heroicon-o-check-circle' : null)
                     ->sortable(false);
-                
+
                 $columns[] = Tables\Columns\TextColumn::make("day_{$day->id}_checkout")
                     ->label("Day {$day->day_number} Check-out")
                     ->getStateUsing(function ($record) use ($day) {
@@ -110,26 +154,82 @@ class AttendeesRelationManager extends RelationManager
                 ->orderByDesc('id'))
             ->poll('5s')
             ->columns($this->getTableColumns())
-            ->filters([
-                Tables\Filters\TernaryFilter::make('checked_in_at')
-                    ->label('Check-in Status')
-                    ->placeholder('All attendees')
-                    ->trueLabel('Checked in')
-                    ->falseLabel('Not checked in')
-                    ->queries(
-                        true: fn ($query) => $query->whereNotNull('checked_in_at'),
-                        false: fn ($query) => $query->whereNull('checked_in_at'),
-                    ),
-                Tables\Filters\TernaryFilter::make('checked_out_at')
-                    ->label('Check-out Status')
-                    ->placeholder('All attendees')
-                    ->trueLabel('Checked out')
-                    ->falseLabel('Not checked out')
-                    ->queries(
-                        true: fn ($query) => $query->whereNotNull('checked_out_at'),
-                        false: fn ($query) => $query->whereNull('checked_out_at'),
-                    ),
-            ])
+            ->filters(
+                array_filter([
+                    // Day filter first — choose a date, then check-in/out filters appear
+                    $this->ownerRecord && $this->ownerRecord->isMultiDay() && $this->ownerRecord->days()->exists()
+                        ? Tables\Filters\SelectFilter::make('day_id')
+                            ->label('Day')
+                            ->placeholder('Choose a day first...')
+                            ->options(fn () => $this->ownerRecord->days()->orderBy('day_number')->get()->mapWithKeys(fn ($d) => [$d->id => "Day {$d->day_number} ({$d->date->format('M j, Y')})"]))
+                            ->query(function ($query, array $data) {
+                                $dayId = $data['value'] ?? null;
+                                return filled($dayId)
+                                    ? $query->whereHas('checkIns', fn ($q) => $q->where('seminar_day_id', $dayId))
+                                    : $query;
+                            })
+                        : null,
+                    // Check-in filter — visible only when a day is selected (multi-day)
+                    Tables\Filters\TernaryFilter::make('checked_in_at')
+                        ->label('Check-in Status')
+                        ->placeholder('All attendees')
+                        ->trueLabel('Checked in')
+                        ->falseLabel('Not checked in')
+                        ->visible(fn () => !$this->ownerRecord?->isMultiDay() || $this->getSelectedDayId() !== null)
+                        ->queries(
+                            true: function ($query) {
+                                $dayId = $this->getSelectedDayId();
+                                if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
+                                    $q = fn ($q) => $q->whereNotNull('checked_in_at');
+                                    if ($dayId) {
+                                        $q = fn ($q) => $q->where('seminar_day_id', $dayId)->whereNotNull('checked_in_at');
+                                    }
+                                    return $query->whereHas('checkIns', $q);
+                                }
+                                return $query->whereNotNull('checked_in_at');
+                            },
+                            false: function ($query) {
+                                $dayId = $this->getSelectedDayId();
+                                if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
+                                    if ($dayId) {
+                                        return $query->whereDoesntHave('checkIns', fn ($q) => $q->where('seminar_day_id', $dayId)->whereNotNull('checked_in_at'));
+                                    }
+                                    return $query->whereDoesntHave('checkIns', fn ($q) => $q->whereNotNull('checked_in_at'));
+                                }
+                                return $query->whereNull('checked_in_at');
+                            },
+                        ),
+                    Tables\Filters\TernaryFilter::make('checked_out_at')
+                        ->label('Check-out Status')
+                        ->placeholder('All attendees')
+                        ->trueLabel('Checked out')
+                        ->falseLabel('Not checked out')
+                        ->visible(fn () => !$this->ownerRecord?->isMultiDay() || $this->getSelectedDayId() !== null)
+                        ->queries(
+                            true: function ($query) {
+                                $dayId = $this->getSelectedDayId();
+                                if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
+                                    $q = fn ($q) => $q->whereNotNull('checked_out_at');
+                                    if ($dayId) {
+                                        $q = fn ($q) => $q->where('seminar_day_id', $dayId)->whereNotNull('checked_out_at');
+                                    }
+                                    return $query->whereHas('checkIns', $q);
+                                }
+                                return $query->whereNotNull('checked_out_at');
+                            },
+                            false: function ($query) {
+                                $dayId = $this->getSelectedDayId();
+                                if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
+                                    if ($dayId) {
+                                        return $query->whereDoesntHave('checkIns', fn ($q) => $q->where('seminar_day_id', $dayId)->whereNotNull('checked_out_at'));
+                                    }
+                                    return $query->whereDoesntHave('checkIns', fn ($q) => $q->whereNotNull('checked_out_at'));
+                                }
+                                return $query->whereNull('checked_out_at');
+                            },
+                        ),
+                ])
+            )
             ->headerActions([
                 Tables\Actions\Action::make('check_in')
                     ->label('Check In')
@@ -186,7 +286,7 @@ class AttendeesRelationManager extends RelationManager
                     ->icon('heroicon-o-arrow-right-on-rectangle')
                     ->color('warning')
                     ->size('sm')
-                    ->visible(fn () => $this->ownerRecord && $this->ownerRecord->attendees()->whereNotNull('checked_in_at')->exists())
+                    ->visible(fn () => $this->ownerRecord)
                     ->modalHeading('Select Day for Check-Out')
                     ->modalDescription('This is a multi-day seminar. Please select which day you want to check out attendees for.')
                     ->modalSubmitActionLabel('Go to Check-Out')
@@ -538,7 +638,7 @@ class AttendeesRelationManager extends RelationManager
                                     ->content(fn ($record) => $record->sex ? ucfirst($record->sex) : '—'),
                                 Forms\Components\Placeholder::make('school_office_agency')
                                     ->label('School/Office/Agency')
-                                    ->content(fn ($record) => $record->school_office_agency ?? '—'),
+                                    ->content(fn ($record) => $record->school_office_agency_display),
                                 Forms\Components\Placeholder::make('position')
                                     ->label('Position')
                                     ->content(fn ($record) => $record->position ?? '—'),
@@ -564,7 +664,7 @@ class AttendeesRelationManager extends RelationManager
                                 Forms\Components\Placeholder::make('prc_license_expiry')
                                     ->label('PRC Expiry')
                                     ->content(fn ($record) => $record->isTeaching() && $record->prc_license_expiry
-                                        ? $record->prc_license_expiry->format('d/m/Y')
+                                        ? $record->prc_license_expiry->format('F j, Y')
                                         : 'N/A'),
                             ])
                             ->columns(2),
@@ -656,6 +756,15 @@ class AttendeesRelationManager extends RelationManager
                     ->size('sm')
                     ->modalHeading('Correct Attendee Information')
                     ->modalDescription('Fix typos or errors in attendee details.')
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        if (!empty($data['school_other'])) {
+                            $data['school_id'] = 'other';
+                        } elseif (empty($data['school_id']) && !empty($data['school_office_agency'])) {
+                            $data['school_id'] = 'other';
+                            $data['school_other'] = $data['school_office_agency'];
+                        }
+                        return $data;
+                    })
                     ->form([
                         Forms\Components\Section::make('Name')
                             ->schema([
@@ -690,9 +799,26 @@ class AttendeesRelationManager extends RelationManager
                                 Forms\Components\TextInput::make('position')
                                     ->label('Position')
                                     ->maxLength(255),
-                                Forms\Components\TextInput::make('school_office_agency')
+                                Forms\Components\Select::make('school_id')
                                     ->label('School/Office/Agency')
-                                    ->maxLength(255),
+                                    ->options(function () {
+                                        $schools = School::orderBy('name')->pluck('name', 'id')->all();
+                                        $schools['other'] = 'Others (please specify)';
+                                        return $schools;
+                                    })
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                        if ($state !== 'other') {
+                                            $set('school_other', null);
+                                        }
+                                    }),
+                                Forms\Components\TextInput::make('school_other')
+                                    ->label('Specify School/Office/Agency')
+                                    ->visible(fn (Forms\Get $get) => $get('school_id') === 'other')
+                                    ->required(fn (Forms\Get $get) => $get('school_id') === 'other')
+                                    ->maxLength(255)
+                                    ->placeholder('Enter if not in the list'),
                                 Forms\Components\Select::make('personnel_type')
                                     ->label('Personnel Type')
                                     ->options(['teaching' => 'Teaching', 'non_teaching' => 'Non-Teaching'])
@@ -717,23 +843,7 @@ class AttendeesRelationManager extends RelationManager
                     ->label('Check In')
                     ->icon('heroicon-o-check-circle')
                     ->size('sm')
-                    ->visible(function ($record) {
-                        if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
-                            // For multi-day, show if not checked in for all days
-                            $days = $this->ownerRecord->days;
-                            foreach ($days as $day) {
-                                $checkIn = AttendeeCheckIn::where('attendee_id', $record->id)
-                                    ->where('seminar_day_id', $day->id)
-                                    ->whereNotNull('checked_in_at')
-                                    ->doesntExist();
-                                if ($checkIn) {
-                                    return true; // Has at least one day not checked in
-                                }
-                            }
-                            return false;
-                        }
-                        return $record->checked_in_at === null;
-                    })
+                    ->visible(fn () => $this->ownerRecord)
                     ->form(function ($record) {
                         $formFields = [];
                         
@@ -761,14 +871,19 @@ class AttendeesRelationManager extends RelationManager
                         
                         return $formFields;
                     })
-                    ->requiresConfirmation()
                     ->action(function ($record, array $data) {
                         if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
                             $dayId = $data['day_id'] ?? null;
                             if (!$dayId) {
+                                $hasUncheckedDay = $this->ownerRecord->days->contains(function ($day) use ($record) {
+                                    return AttendeeCheckIn::where('attendee_id', $record->id)
+                                        ->where('seminar_day_id', $day->id)
+                                        ->whereNotNull('checked_in_at')
+                                        ->doesntExist();
+                                });
                                 \Filament\Notifications\Notification::make()
-                                    ->title('Day selection required')
-                                    ->body('Please select a day to check in.')
+                                    ->title($hasUncheckedDay ? 'Day selection required' : 'Already checked in')
+                                    ->body($hasUncheckedDay ? 'Please select a day to check in.' : 'This attendee is already checked in for all days.')
                                     ->danger()
                                     ->send();
                                 return;
@@ -805,24 +920,8 @@ class AttendeesRelationManager extends RelationManager
                     ->label('Check Out')
                     ->icon('heroicon-o-arrow-right-on-rectangle')
                     ->size('sm')
-                    ->visible(function ($record) {
-                        if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
-                            // For multi-day, show if checked in but not checked out for at least one day
-                            $days = $this->ownerRecord->days;
-                            foreach ($days as $day) {
-                                $checkIn = AttendeeCheckIn::where('attendee_id', $record->id)
-                                    ->where('seminar_day_id', $day->id)
-                                    ->whereNotNull('checked_in_at')
-                                    ->whereNull('checked_out_at')
-                                    ->exists();
-                                if ($checkIn) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        }
-                        return $record->checked_in_at !== null && $record->checked_out_at === null;
-                    })
+                    ->visible(fn () => $this->ownerRecord)
+                    ->modalSubmitActionLabel('Check Out')
                     ->form(function ($record) {
                         $formFields = [];
                         
@@ -851,14 +950,18 @@ class AttendeesRelationManager extends RelationManager
                         
                         return $formFields;
                     })
-                    ->requiresConfirmation()
                     ->action(function ($record, array $data) {
                         if ($this->ownerRecord && $this->ownerRecord->isMultiDay()) {
                             $dayId = $data['day_id'] ?? null;
                             if (!$dayId) {
+                                $hasAnyToCheckOut = AttendeeCheckIn::where('attendee_id', $record->id)
+                                    ->whereIn('seminar_day_id', $this->ownerRecord->days->pluck('id'))
+                                    ->whereNotNull('checked_in_at')
+                                    ->whereNull('checked_out_at')
+                                    ->exists();
                                 \Filament\Notifications\Notification::make()
-                                    ->title('Day selection required')
-                                    ->body('Please select a day to check out.')
+                                    ->title($hasAnyToCheckOut ? 'Day selection required' : 'Not checked in')
+                                    ->body($hasAnyToCheckOut ? 'Please select a day to check out.' : 'This attendee must be checked in first before checking out.')
                                     ->danger()
                                     ->send();
                                 return;
@@ -895,6 +998,14 @@ class AttendeesRelationManager extends RelationManager
                                 ->success()
                                 ->send();
                         } else {
+                            if (!$record->checked_in_at) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Not checked in')
+                                    ->body('This attendee must be checked in first before checking out.')
+                                    ->warning()
+                                    ->send();
+                                return;
+                            }
                             $record->update(['checked_out_at' => now()]);
                             \Filament\Notifications\Notification::make()
                                 ->title('Attendee checked out successfully!')
