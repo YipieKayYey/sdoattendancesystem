@@ -448,7 +448,7 @@ class AttendeesRelationManager extends RelationManager
                                 ->multiple()
                                 ->searchable()
                                 ->preload()
-                                ->helperText('Leave empty to generate a blank sheet'),
+                                ->helperText('Leave empty to generate a sheet with no names (empty rows for handwritten names).'),
                             Forms\Components\Toggle::make('blank_signatures')
                                 ->label('Blank Signatures')
                                 ->helperText('Leave signature column blank (for agencies that don\'t allow e-signatures)')
@@ -527,7 +527,7 @@ class AttendeesRelationManager extends RelationManager
                                 ->multiple()
                                 ->searchable()
                                 ->preload()
-                                ->helperText('Leave empty to generate a blank sheet'),
+                                ->helperText('Leave empty to generate a sheet with no names (empty rows for handwritten names).'),
                             Forms\Components\Toggle::make('blank_signatures')
                                 ->label('Blank Signatures')
                                 ->helperText('Leave signature column blank (for handwritten signatures)')

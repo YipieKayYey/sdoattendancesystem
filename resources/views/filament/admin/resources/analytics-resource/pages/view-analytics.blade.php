@@ -1,3 +1,4 @@
+@php $analytics = $this->getAnalyticsData(); @endphp
 <x-filament-panels::page>
     <div class="space-y-6">
         <!-- Header -->
@@ -27,7 +28,7 @@
                     </div>
                     <div class="ml-4">
                         <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Registrations</div>
-                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $this->getAnalyticsData()['total_registrations'] }}</div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $analytics['total_registrations'] }}</div>
                     </div>
                 </div>
             </div>
@@ -41,8 +42,8 @@
                     </div>
                     <div class="ml-4">
                         <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Checked In</div>
-                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $this->getAnalyticsData()['total_checked_in'] }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $this->getAnalyticsData()['check_in_rate'] }}% rate</div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $analytics['total_checked_in'] }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $analytics['check_in_rate'] }}% rate</div>
                     </div>
                 </div>
             </div>
@@ -56,8 +57,8 @@
                     </div>
                     <div class="ml-4">
                         <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Checked Out</div>
-                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $this->getAnalyticsData()['total_checked_out'] }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $this->getAnalyticsData()['check_out_rate'] }}% rate</div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $analytics['total_checked_out'] }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $analytics['check_out_rate'] }}% rate</div>
                     </div>
                 </div>
             </div>
@@ -87,13 +88,13 @@
             <!-- Personnel Type Breakdown -->
             <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personnel Type Breakdown</h3>
-                @if(!empty($this->getAnalyticsData()['personnel_breakdown']))
+                @if(!empty($analytics['personnel_breakdown']))
                     <div class="space-y-3">
-                        @foreach($this->getAnalyticsData()['personnel_breakdown'] as $type => $count)
+                        @foreach($analytics['personnel_breakdown'] as $type => $count)
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ ucfirst($type) }}</span>
                                 <div class="flex items-center">
-                                    @php($total = $this->getAnalyticsData()['total_registrations'])
+                                    @php($total = $analytics['total_registrations'])
                                     <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
                                         <div class="bg-blue-600 dark:bg-blue-500 h-2 rounded-full" style="width: {{ $total > 0 ? ($count / $total) * 100 : 0 }}%"></div>
                                     </div>
@@ -110,13 +111,13 @@
             <!-- Gender Breakdown -->
             <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Gender Distribution</h3>
-                @if(!empty($this->getAnalyticsData()['gender_breakdown']))
+                @if(!empty($analytics['gender_breakdown']))
                     <div class="space-y-3">
-                        @foreach($this->getAnalyticsData()['gender_breakdown'] as $gender => $count)
+                        @foreach($analytics['gender_breakdown'] as $gender => $count)
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ ucfirst($gender) }}</span>
                                 <div class="flex items-center">
-                                    @php($total = $this->getAnalyticsData()['total_registrations'])
+                                    @php($total = $analytics['total_registrations'])
                                     <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
                                         <div class="bg-green-600 dark:bg-green-500 h-2 rounded-full" style="width: {{ $total > 0 ? ($count / $total) * 100 : 0 }}%"></div>
                                     </div>
@@ -133,9 +134,9 @@
             <!-- Top Schools -->
             <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Participating Schools</h3>
-                @if(!empty($this->getAnalyticsData()['top_schools']))
+                @if(!empty($analytics['top_schools']))
                     <div class="space-y-3">
-                        @foreach($this->getAnalyticsData()['top_schools'] as $school => $count)
+                        @foreach($analytics['top_schools'] as $school => $count)
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $school }}</span>
                                 <span class="text-sm text-gray-900 dark:text-white font-semibold">{{ $count }}</span>
@@ -148,12 +149,12 @@
             </div>
 
             <!-- Daily Attendance (Multi-Day) -->
-            @if($this->getAnalyticsData()['is_multi_day'])
+            @if($analytics['is_multi_day'])
                 <div class="fi-section-bg rounded-xl shadow-sm border p-6">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Attendance</h3>
-                    @if(!empty($this->getAnalyticsData()['daily_attendance']))
+                    @if(!empty($analytics['daily_attendance']))
                         <div class="space-y-3">
-                            @foreach($this->getAnalyticsData()['daily_attendance'] as $day)
+                            @foreach($analytics['daily_attendance'] as $day)
                                 <div class="border-l-4 border-blue-500 dark:border-blue-400 pl-4">
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="text-sm font-medium text-gray-900 dark:text-white">Day {{ $day['day'] }} - {{ $day['date'] }}</span>

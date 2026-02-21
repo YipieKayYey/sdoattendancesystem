@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureRateLimiting();
+
         // Set DomPDF public path explicitly if config exists
         // Handles both 'public' and 'public_html' directories
         if (Config::has('dompdf.public_path')) {
@@ -38,5 +43,23 @@ class AppServiceProvider extends ServiceProvider
                 : base_path('public');
             Config::set('dompdf.public_path', $publicPath);
         }
+    }
+
+    /**
+     * Configure rate limiting for registration and export routes.
+     */
+    protected function configureRateLimiting(): void
+    {
+        // Public registration: limit per IP to reduce spam/abuse
+        RateLimiter::for('registration', function (Request $request) {
+            return Limit::perMinute(15)->by($request->ip());
+        });
+
+        // Admin PDF/CSV exports: limit per user (or IP if unauthenticated) to avoid server load
+        RateLimiter::for('exports', function (Request $request) {
+            $key = $request->user()?->id() ?? $request->ip();
+
+            return Limit::perMinute(30)->by((string) $key);
+        });
     }
 }

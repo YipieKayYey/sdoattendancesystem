@@ -8,8 +8,12 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
 /**
- * Alternative PDF service using mPDF
- * Better CSS support than DomPDF
+ * Alternative PDF service using mPDF for registration sheets.
+ * Better CSS support than DomPDF.
+ *
+ * Optional alternative: not wired to any route or Filament action by default.
+ * The app uses RegistrationSheetPdfService (DomPDF) for registration sheet export.
+ * Wire this service if you prefer mPDF rendering.
  */
 class MpdfRegistrationSheetService
 {

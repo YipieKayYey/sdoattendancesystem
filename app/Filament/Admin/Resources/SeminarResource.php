@@ -360,29 +360,38 @@ class SeminarResource extends Resource
 
     public static function mutateFormDataBeforeCreate(array $data): array
     {
-        \Log::info('mutateFormDataBeforeCreate called with: ' . json_encode(array_keys($data)));
-        if (isset($data['days'])) {
-            \Log::info('Days data: ' . json_encode($data['days']));
+        if (config('app.debug')) {
+            \Log::info('mutateFormDataBeforeCreate called with: ' . json_encode(array_keys($data)));
+            if (isset($data['days'])) {
+                \Log::info('Days data: ' . json_encode($data['days']));
+            }
         }
         return self::convertTimeFields($data);
     }
 
     public static function mutateFormDataBeforeUpdate(array $data): array
     {
-        \Log::info('mutateFormDataBeforeUpdate called with: ' . json_encode(array_keys($data)));
-        if (isset($data['days'])) {
-            \Log::info('Days data: ' . json_encode($data['days']));
+        if (config('app.debug')) {
+            \Log::info('mutateFormDataBeforeUpdate called with: ' . json_encode(array_keys($data)));
+            if (isset($data['days'])) {
+                \Log::info('Days data: ' . json_encode($data['days']));
+            }
         }
         return self::convertTimeFields($data);
     }
 
     public static function convertTimeFields(array $data): array
     {
-        \Log::info('convertTimeFields called');
-        
+        $debug = config('app.debug');
+        if ($debug) {
+            \Log::info('convertTimeFields called');
+        }
+
         // Handle single-day seminar time conversion
         if (isset($data['time_hour'], $data['time_minute'], $data['time_period'])) {
-            \Log::info('Processing single-day time conversion');
+            if ($debug) {
+                \Log::info('Processing single-day time conversion');
+            }
             $hour = (int)$data['time_hour'];
             $minute = $data['time_minute'];
             $period = $data['time_period'];
@@ -403,35 +412,44 @@ class SeminarResource extends Resource
         
         // Handle multi-day seminar time conversion
         if (isset($data['days']) && is_array($data['days'])) {
-            \Log::info('Processing multi-day time conversion for ' . count($data['days']) . ' days');
+            if ($debug) {
+                \Log::info('Processing multi-day time conversion for ' . count($data['days']) . ' days');
+            }
             foreach ($data['days'] as $index => &$day) {
-                \Log::info('Day ' . $index . ' keys: ' . json_encode(array_keys($day)));
+                if ($debug) {
+                    \Log::info('Day ' . $index . ' keys: ' . json_encode(array_keys($day)));
+                }
                 if (isset($day['start_time_hour'], $day['start_time_minute'], $day['start_time_period'])) {
-                    \Log::info('Converting time for day ' . $index);
+                    if ($debug) {
+                        \Log::info('Converting time for day ' . $index);
+                    }
                     $hour = (int)$day['start_time_hour'];
                     $minute = $day['start_time_minute'];
                     $period = $day['start_time_period'];
-                    
+
                     // Convert to 24-hour format
                     if ($period === 'PM' && $hour !== 12) {
                         $hour += 12;
                     } elseif ($period === 'AM' && $hour === 12) {
                         $hour = 0;
                     }
-                    
+
                     $day['start_time'] = sprintf('%02d:%02d:00', $hour, $minute);
-                    \Log::info('Set start_time to: ' . $day['start_time']);
-                    
+                    if ($debug) {
+                        \Log::info('Set start_time to: ' . $day['start_time']);
+                    }
+
                     // Clean up temporary fields
                     unset($day['start_time_hour'], $day['start_time_minute'], $day['start_time_period']);
-                } else {
-                    // Debug: Check what time fields are missing
+                } elseif ($debug) {
                     \Log::info('Missing time fields for day ' . $index . '. Keys: ' . json_encode(array_keys($day)));
                 }
             }
         }
-        
-        \Log::info('convertTimeFields completed');
+
+        if ($debug) {
+            \Log::info('convertTimeFields completed');
+        }
         return $data;
     }
 

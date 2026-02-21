@@ -24,6 +24,7 @@ Route::get('/login', function () {
 })->name('login');
 
 Route::get('/register/{slug}', RegisterAttendee::class)
+    ->middleware('throttle:registration')
     ->name('register');
 
 Route::get('/survey/{slug}', function (string $slug) {
@@ -80,8 +81,8 @@ Route::get('/ticket/{ticket_hash}/download', function (string $ticket_hash) {
     return $pdf->download('ticket-' . $ticket_hash . '.pdf');
 })->name('ticket.download');
 
-// PDF Export Routes (Protected by Filament auth middleware)
-Route::middleware(['auth'])->group(function () {
+// PDF Export Routes (Protected by Filament auth middleware + rate limit)
+Route::middleware(['auth', 'throttle:exports'])->group(function () {
     Route::get('/admin/seminars/{seminar}/export-registration-sheet', function (Seminar $seminar) {
         $service = app(RegistrationSheetPdfService::class);
         $attendeeIds = request()->query('attendee_ids');

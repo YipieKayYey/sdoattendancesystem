@@ -9,7 +9,11 @@ use Illuminate\Support\Str;
 
 /**
  * PDF Form Filling Service
- * Fills fillable PDF forms dynamically based on number of attendees
+ * Fills fillable PDF forms dynamically based on number of attendees (pdftk).
+ *
+ * Optional alternative: not wired to any route or Filament action by default.
+ * The app uses RegistrationSheetPdfService (DomPDF) for registration sheet export.
+ * Wire this service if you need fillable-form output instead.
  */
 class PdfFormFillingService
 {
