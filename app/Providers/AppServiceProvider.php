@@ -57,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Admin PDF/CSV exports: limit per user (or IP if unauthenticated) to avoid server load
         RateLimiter::for('exports', function (Request $request) {
-            $key = $request->user()?->id() ?? $request->ip();
+            $key = $request->user()?->id ?? $request->ip();
 
             return Limit::perMinute(30)->by((string) $key);
         });

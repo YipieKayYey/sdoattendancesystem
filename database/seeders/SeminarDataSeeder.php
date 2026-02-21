@@ -7,6 +7,7 @@ use App\Models\AttendeeCheckIn;
 use App\Models\Seminar;
 use App\Models\SeminarDay;
 use App\Models\User;
+use App\Services\AttendanceSqlParser;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,6 +30,33 @@ class SeminarDataSeeder extends Seeder
             ['email' => 'sdoadmin2@deped.gov.ph'],
             [
                 'name' => 'SDO Admin 2',
+                'password' => Hash::make('SDOBC2026'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'sdoadmin3@deped.gov.ph'],
+            [
+                'name' => 'SDO Admin 3',
+                'password' => Hash::make('SDOBC2026'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'sdoadmin4@deped.gov.ph'],
+            [
+                'name' => 'SDO Admin 4',
+                'password' => Hash::make('SDOBC2026'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'sdoadmin5@deped.gov.ph'],
+            [
+                'name' => 'SDO Admin 5',
                 'password' => Hash::make('SDOBC2026'),
                 'email_verified_at' => now(),
             ]
@@ -92,6 +120,20 @@ Other Manners',
                 'is_ended' => false,
                 'attendees' => true, // Seed attendees from SQL data
             ],
+            [
+                'title' => 'Division Workshop on PRC-CPD Accreditation for School Year 2026-2027 School-Based Professional Development Programs (SLAC/INSET)',
+                'slug' => 'division-workshop-prc-cpd-slac-inset-2026',
+                'date' => '2026-02-19',
+                'venue' => null,
+                'topic' => null,
+                'time' => null,
+                'room' => null,
+                'capacity' => null,
+                'is_open' => true,
+                'is_ended' => true,
+                'is_multi_day' => true,
+                'attendees' => true,
+            ],
         ];
 
         foreach ($seminars as $seminarData) {
@@ -118,10 +160,26 @@ Other Manners',
                 ]
             );
 
+            // Division Workshop (seminar 6): add Day 2
+            if ($seminar->title === 'Division Workshop on PRC-CPD Accreditation for School Year 2026-2027 School-Based Professional Development Programs (SLAC/INSET)') {
+                SeminarDay::firstOrCreate(
+                    ['seminar_id' => $seminar->id, 'day_number' => 2],
+                    [
+                        'date' => '2026-02-20',
+                        'start_time' => '08:00',
+                        'venue' => 'Villa Amanda Resort and Restaurant',
+                        'topic' => 'TBA',
+                        'room' => 'TBA',
+                    ]
+                );
+            }
+
             // Seed attendees only if flag is true
             if ($shouldSeedAttendees) {
                 if ($seminar->title === '1st DIVISION MANAGEMENT COMMITTEE (MANCOM) MEETING') {
                     $this->seedManagementCommitteeAttendees($seminar);
+                } elseif ($seminar->title === 'Division Workshop on PRC-CPD Accreditation for School Year 2026-2027 School-Based Professional Development Programs (SLAC/INSET)') {
+                    $this->seedDivisionWorkshopAttendees($seminar);
                 } else {
                     $this->seedAttendeesForSeminar($seminar);
                 }
@@ -1963,6 +2021,102 @@ Other Manners',
                         "checked_out_at" => $attendee->checked_out_at,
                     ]);
                 }
+            }
+        }
+    }
+
+    private function seedDivisionWorkshopAttendees(Seminar $seminar): void
+    {
+        $day1 = $seminar->days()->where('day_number', 1)->first();
+        $day2 = $seminar->days()->where('day_number', 2)->first();
+        if (!$day1) {
+            return;
+        }
+
+        $sqlPath = database_path('u266949284_sdoattendance.sql');
+        if (! file_exists($sqlPath)) {
+            return;
+        }
+
+        $parser = new AttendanceSqlParser($sqlPath);
+        $attendeesData = $parser->parseAttendees(6);
+        $checkInsBySqlId = $parser->parseCheckIns([10, 11]); // SQL seminar_day_id 10=Day1, 11=Day2
+
+        // Remove sample attendees: keep only real attendees from SQL dump
+        $realEmails = array_column($attendeesData, 'email');
+        Attendee::where('seminar_id', $seminar->id)
+            ->whereNotIn('email', $realEmails)
+            ->each(fn (Attendee $a) => $a->delete());
+
+        foreach ($attendeesData as $attendeeData) {
+            $sqlId = $attendeeData['sql_id'] ?? 0;
+            unset($attendeeData['sql_id']);
+
+            $ci = $checkInsBySqlId[$sqlId] ?? [];
+            $d1 = $ci[10] ?? null;
+            $d2 = $ci[11] ?? null;
+            $d1In = $d1['checked_in_at'] ?? null;
+            $d1Out = $d1['checked_out_at'] ?? null;
+            $d2In = $d2['checked_in_at'] ?? null;
+            $d2Out = $d2['checked_out_at'] ?? null;
+            $checkedInAt = $d1In ?? $d2In;
+            $checkedOutAt = $d1Out ?? $d2Out;
+            $sigTs = $attendeeData['signature_timestamp'] ?? $checkedInAt ?? '2026-02-19 08:00:00';
+
+            $ticketHash = $attendeeData['ticket_hash'] ?: ('DW' . strtoupper(substr(md5('division-workshop-' . $attendeeData['email']), 0, 14)));
+            $signatureImage = $attendeeData['signature_image'];
+
+            $payload = [
+                'ticket_hash' => $ticketHash,
+                'checked_in_at' => $checkedInAt ? \Carbon\Carbon::parse($checkedInAt) : null,
+                'checked_out_at' => $checkedOutAt ? \Carbon\Carbon::parse($checkedOutAt) : null,
+                'signature_consent' => $attendeeData['signature_consent'] ?? true,
+                'signature_image' => $signatureImage,
+                'signature_upload_path' => $attendeeData['signature_upload_path'],
+                'signature_timestamp' => $sigTs ? \Carbon\Carbon::parse($sigTs) : null,
+                'signature_hash' => $attendeeData['signature_hash'],
+                'signature_metadata' => $attendeeData['signature_metadata'],
+            ];
+
+            $attendee = Attendee::where('seminar_id', $seminar->id)->where('email', $attendeeData['email'])->first();
+            if (! $attendee) {
+                $attendee = Attendee::create(array_merge([
+                    'seminar_id' => $seminar->id,
+                    'name' => $attendeeData['name'],
+                    'first_name' => $attendeeData['first_name'],
+                    'middle_name' => $attendeeData['middle_name'],
+                    'last_name' => $attendeeData['last_name'],
+                    'suffix' => $attendeeData['suffix'],
+                    'email' => $attendeeData['email'],
+                    'mobile_phone' => $attendeeData['mobile_phone'],
+                    'sex' => $attendeeData['sex'] ?? 'male',
+                    'personnel_type' => $attendeeData['personnel_type'] ?? 'teaching',
+                    'position' => $attendeeData['position'] ?? '',
+                    'school_office_agency' => $attendeeData['school_office_agency'],
+                    'prc_license_no' => $attendeeData['prc_license_no'],
+                    'prc_license_expiry' => $attendeeData['prc_license_expiry'] ? \Carbon\Carbon::parse($attendeeData['prc_license_expiry']) : null,
+                ], $payload));
+            } else {
+                $attendee->update($payload);
+            }
+
+            if ($d1In && $day1) {
+                AttendeeCheckIn::updateOrCreate(
+                    ['attendee_id' => $attendee->id, 'seminar_day_id' => $day1->id],
+                    [
+                        'checked_in_at' => \Carbon\Carbon::parse($d1In),
+                        'checked_out_at' => $d1Out ? \Carbon\Carbon::parse($d1Out) : null,
+                    ]
+                );
+            }
+            if ($d2In && $day2) {
+                AttendeeCheckIn::updateOrCreate(
+                    ['attendee_id' => $attendee->id, 'seminar_day_id' => $day2->id],
+                    [
+                        'checked_in_at' => \Carbon\Carbon::parse($d2In),
+                        'checked_out_at' => $d2Out ? \Carbon\Carbon::parse($d2Out) : null,
+                    ]
+                );
             }
         }
     }

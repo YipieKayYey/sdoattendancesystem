@@ -144,8 +144,8 @@
         }
 
         .signature-img {
-            max-width: 110px;
-            max-height: 28px;
+            max-width: 120px;
+            max-height: 36px;
             object-fit: contain;
         }
 
@@ -240,63 +240,16 @@
         .signature-container {
             position: relative;
             display: inline-block;
-            width: 110px;
-            height: 28px;
+            width: 120px;
+            height: 36px;
             overflow: hidden;
         }
 
         .signature-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            max-width: 110px;
-            max-height: 28px;
+            max-width: 120px;
+            max-height: 36px;
             display: block;
             opacity: 0.7;
-        }
-
-        .signature-watermark {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.05) 2px,
-                rgba(0, 0, 0, 0.05) 4px
-            );
-        }
-
-        .signature-text-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            z-index: 3;
-            font-size: 7pt;
-            color: rgba(0, 0, 0, 0.1);
-            font-weight: normal;
-            white-space: nowrap;
-            pointer-events: none;
-            text-transform: uppercase;
-            letter-spacing: 1.5pt;
-        }
-
-        .signature-border {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 0.5pt solid rgba(0, 0, 0, 0.2);
-            z-index: 4;
-            pointer-events: none;
         }
 
         .page-break {
@@ -385,9 +338,6 @@
                                         alt="Signature"
                                         class="signature-image"
                                     >
-                                    <div class="signature-watermark"></div>
-                                    <div class="signature-text-overlay">VERIFIED</div>
-                                    <div class="signature-border"></div>
                                 </div>
                             @endif
                         </td>

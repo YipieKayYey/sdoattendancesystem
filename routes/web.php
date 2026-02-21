@@ -129,16 +129,26 @@ Route::middleware(['auth', 'throttle:exports'])->group(function () {
     })->name('seminars.registration-qr.view');
 
     Route::get('/admin/seminars/{seminar}/registration-qr', function (Seminar $seminar) {
-        $service = app(SeminarQrCodeService::class);
-        $png = $service->generatePng($seminar);
+        ob_start();
+        try {
+            $service = app(SeminarQrCodeService::class);
+            $png = $service->generatePng($seminar);
+        } finally {
+            ob_end_clean();
+        }
         return response($png)
             ->header('Content-Type', 'image/png')
             ->header('Content-Disposition', 'inline; filename="registration-qr-' . $seminar->slug . '.png"');
     })->name('seminars.registration-qr');
 
     Route::get('/admin/seminars/{seminar}/registration-qr/download', function (Seminar $seminar) {
-        $service = app(SeminarQrCodeService::class);
-        $png = $service->generatePng($seminar);
+        ob_start();
+        try {
+            $service = app(SeminarQrCodeService::class);
+            $png = $service->generatePng($seminar);
+        } finally {
+            ob_end_clean();
+        }
         return response($png)
             ->header('Content-Type', 'image/png')
             ->header('Content-Disposition', 'attachment; filename="registration-qr-' . $seminar->slug . '.png"');

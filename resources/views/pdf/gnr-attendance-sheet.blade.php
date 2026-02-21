@@ -13,9 +13,9 @@
         table { width: 100%; border-collapse: collapse; }
         table th, table td { border: 1pt solid #000; padding: 8pt 6pt; font-size: 10pt; }
         table th { font-weight: bold; text-align: center; }
-        .signature-cell { min-width: 60pt; min-height: 28pt; }
-        .signature-container { display: inline-block; width: 80px; height: 24px; overflow: hidden; position: relative; }
-        .signature-image { max-width: 80px; max-height: 24px; display: block; opacity: 0.7; }
+        .signature-cell { min-width: 90pt; min-height: 36pt; }
+        .signature-container { display: inline-block; width: 120px; height: 36px; overflow: hidden; position: relative; }
+        .signature-image { max-width: 120px; max-height: 36px; display: block; opacity: 0.7; }
     </style>
 </head>
 <body>

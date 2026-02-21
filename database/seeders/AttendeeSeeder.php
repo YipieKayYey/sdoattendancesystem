@@ -146,11 +146,16 @@ class AttendeeSeeder extends Seeder
 
         $allAttendees = array_merge($teachingAttendees, $nonTeachingAttendees);
 
-        // Create attendees for each seminar (excluding legacy 1st Division seminar)
+        // Create attendees for each seminar (excluding legacy 1st Division seminar and Division Workshop)
         foreach ($seminars as $seminar) {
             // Skip the 1st Division Management Committee seminar (legacy data)
             if ($seminar->id === 5) {
                 $this->command->info('Skipping attendees for legacy seminar: ' . $seminar->title);
+                continue;
+            }
+            // Skip Division Workshop (SLAC/INSET) - uses real attendees from SQL dump only
+            if (str_contains($seminar->title, 'Division Workshop on PRC-CPD')) {
+                $this->command->info('Skipping sample attendees for Division Workshop (uses real data from SQL dump)');
                 continue;
             }
             
