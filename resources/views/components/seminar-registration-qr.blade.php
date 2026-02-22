@@ -1,8 +1,8 @@
-<div class="text-center">
+<div class="flex flex-col items-center justify-center w-full">
     <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Registration QR Code</h3>
-    <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border-2 border-blue-200 dark:border-blue-700 inline-block shadow-sm">
+    <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border-2 border-blue-200 dark:border-blue-700 shadow-sm flex justify-center w-full">
         <div class="flex justify-center">
-            <img src="{{ route('seminars.registration-qr', $seminar) }}" alt="Registration QR Code" class="w-40 h-40 sm:w-48 sm:h-48 object-contain">
+            <img src="{{ route('seminars.registration-qr', $seminar) }}" alt="Registration QR Code" class="w-40 h-40 sm:w-48 sm:h-48 object-contain mx-auto">
         </div>
     </div>
     <div class="flex justify-center gap-3 mt-4">

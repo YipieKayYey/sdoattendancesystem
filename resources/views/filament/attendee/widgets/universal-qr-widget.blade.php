@@ -14,6 +14,27 @@
                     {!! $this->getQrCodeHtml() !!}
                 </div>
                 <p class="mt-2 text-xs text-gray-600 dark:text-gray-300 font-mono">{{ $this->getUniversalQrHash() }}</p>
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    <x-filament::button
+                        tag="a"
+                        href="{{ route('attendee.universal-qr.preview') }}"
+                        target="_blank"
+                        color="primary"
+                        size="sm"
+                        icon="heroicon-o-eye"
+                    >
+                        Preview PDF
+                    </x-filament::button>
+                    <x-filament::button
+                        tag="a"
+                        href="{{ route('attendee.universal-qr.download') }}"
+                        color="success"
+                        size="sm"
+                        icon="heroicon-o-arrow-down-tray"
+                    >
+                        Download PDF
+                    </x-filament::button>
+                </div>
             @endif
         </div>
     </x-filament::section>

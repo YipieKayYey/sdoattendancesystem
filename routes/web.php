@@ -81,6 +81,21 @@ Route::get('/ticket/{ticket_hash}/download', function (string $ticket_hash) {
     return $pdf->download('ticket-' . $ticket_hash . '.pdf');
 })->name('ticket.download');
 
+// Attendee Universal QR PDF routes (attendee auth required)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/attendee-qr/preview', [App\Http\Controllers\UniversalQrPdfController::class, 'preview'])
+        ->name('attendee.universal-qr.preview');
+    Route::get('/attendee-qr/download', [App\Http\Controllers\UniversalQrPdfController::class, 'download'])
+        ->name('attendee.universal-qr.download');
+});
+
+// Admin routes (Protected by auth)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/seminars/{id}/live-dashboard', App\Livewire\SeminarLiveDashboard::class)
+        ->name('admin.seminars.live-dashboard')
+        ->whereNumber('id');
+});
+
 // PDF Export Routes (Protected by Filament auth middleware + rate limit)
 Route::middleware(['auth', 'throttle:exports'])->group(function () {
     Route::get('/admin/seminars/{seminar}/export-registration-sheet', function (Seminar $seminar) {

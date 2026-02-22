@@ -19,12 +19,18 @@
 
 The SDO Seminar Management System is a feature-rich web application designed to streamline seminar organization, registration, and attendance tracking for educational institutions. Built with modern web technologies, it provides a complete solution for managing both single-day and multi-day seminars with comprehensive reporting capabilities.
 
+The system supports three user types:
+- **Administrators**: Full access to manage seminars, attendees, check-ins, and generate reports
+- **Registered Attendees**: Access to personal dashboard, Universal QR code, and seminar history
+- **Guest Users**: Public registration without account creation
+
 ### Recent Updates (v0.8)
 
 - **Universal QR Check-In** – Registered attendees use one QR for all seminars; walk-in scan auto-registers and checks in
 - **Attendee Panel** – Dashboard with Seminar History, Universal QR widget, and Seminars Attended stats
 - **Account Linking** – Logged-in attendees who pre-register get `user_id` set; seminars appear in History and stats
 - **Double Registration Prevention** – Logged-in attendees cannot register twice for the same seminar
+- **Profile Completion Gate** – Universal QR code only appears when profile is complete (name, contact, school, PRC, signature)
 
 ## 🖼️ Application Preview
 
@@ -35,29 +41,32 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 ## ✨ Key Features
 
 ### 🎯 Seminar Management
-- **Multi-day seminar support** with individual day tracking
+- **Multi-day seminar support** with individual day tracking via `SeminarDay` model
 - **Open and closed seminar types** with capacity management
 - **Comprehensive seminar information** including venue, time, room details
-- **Seminar status tracking** (active, ended, archived)
-- **Slug-based URLs** for easy pre-registration access
+- **Seminar status tracking** (active, ended, archived with soft deletes)
+- **Slug-based URLs** for easy pre-registration access (8-character random hash)
+- **Survey link tracking** with click analytics
 
 ### 📝 Registration System
-- **Online registration form** with multi-step process
-- **Digital signature capture** with security features
-- **PRC license validation** for teaching personnel
+- **Online registration form** with multi-step Livewire component (`RegisterAttendee`)
+- **Digital signature capture** with security features via `SignatureSecurityService`
+- **PRC license validation** for teaching personnel (7-digit numeric, future expiry date)
 - **Comprehensive attendee data collection** (personal info, position, school/agency)
-- **QR code-based ticketing system** with unique ticket hashes
-- **Registration capacity management** with real-time availability
+- **QR code-based ticketing system** with unique 16-character ticket hashes
+- **Registration capacity management** with real-time availability checking
 - **Guest and registered attendee support** – logged-in attendees get `user_id` linked for Seminar History and stats
-- **Double registration prevention** for logged-in attendees
+- **Double registration prevention** for logged-in attendees (checks `user_id` + `seminar_id`)
+- **Email uniqueness per seminar** (prevents duplicate registrations by email)
 
 ### 📊 Attendance Tracking
-- **Check-in/check-out functionality** per seminar day
+- **Check-in/check-out functionality** per seminar day via `AttendeeCheckIn` model
 - **Multi-day attendance tracking** with individual day records
 - **Real-time attendance monitoring** via Filament admin panel
 - **Universal QR check-in** – registered attendees can walk in and scan their Universal QR (auto-register + check-in)
-- **Dual lookup** – supports both Universal QR hash and per-seminar ticket hash
-- **Attendance analytics** and reporting
+- **Dual lookup** – supports both Universal QR hash (`AttendeeProfile`) and per-seminar ticket hash (`Attendee`)
+- **Walk-in registration** – scanning Universal QR at check-in creates `Attendee` record from `AttendeeProfile`
+- **Attendance analytics** and reporting with multi-day statistics
 
 ### 📈 Reporting & Analytics
 - **PDF report generation** for registration, attendance, and GNR attendance sheets
@@ -66,157 +75,580 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 - **CSV export** for attendance data analysis
 - **Analytics dashboard** with multi-day statistics and PDF reports
 - **Signature images** in exports (no watermark overlay)
+- **Per-day filtering** for multi-day seminars
 
-### 👤 Attendee Panel
-- **Attendee dashboard** at `/attendee` with login
-- **Universal QR Code** – one QR for all seminars (show when checking in)
+### 👤 Attendee Panel (`/attendee`)
+- **Attendee dashboard** with login authentication
+- **Universal QR Code** – one QR for all seminars (16-character hash, shown when checking in)
+- **Profile Completion Gate** – QR code only appears when profile is complete:
+  - Full name (first, middle, last)
+  - Contact info (personnel type, sex, mobile phone, position)
+  - School/Office/Agency
+  - PRC license (if teaching personnel) or explicit "no license"
+  - Digital signature
 - **Seminar History** – table of attended seminars with View modal (check-in/check-out times per day)
 - **Seminars Attended** stats widget
 - **Edit Profile** – update personal info and signature (used for walk-in check-ins)
 - **My Profile** – view profile details
+- **Email management** – attendees can update their email address
 
-### 🛡️ Security & Administration
+### 🛡️ Security & Administration (`/admin`)
 - **Filament v3.2 admin panel** for modern UI/UX
+- **Role-based access control** – `User` model with `role` field (`admin` or `attendee`)
+- **Panel access control** – `User::canAccessPanel()` routes admins to `/admin`, attendees to `/attendee`
 - **Signature security service** with hash validation and consent tracking
-- **Role-based access control** with authentication middleware
 - **School management** for attendee school/office assignment
+- **User management**:
+  - **Create**: Account only (name, email, password, role); creates empty `AttendeeProfile` for attendees
+  - **Edit**: Account + Attendee Profile (editable up to PRC license); signature read-only (attendee provides in dashboard)
+  - **View**: Same fields, read-only
+- **Seminar resources** – full CRUD for seminars, attendees, check-ins
+- **Archived seminars** – soft-deleted seminars accessible via separate resource
 
 ## 🛠️ Technical Stack
 
 ### Backend
 - **Framework**: Laravel 12.0 with PHP 8.2+
 - **Database**: SQLite (default) or MySQL with Eloquent ORM
-- **Admin Panel**: Filament v3.2
-- **Queue System**: Laravel Queues for background processing
+- **Admin Panel**: Filament v3.2 (dual panels: Admin and Attendee)
+- **Queue System**: Laravel Queues (database driver) for background processing
+- **PDF Generation**:
+  - DomPDF (Barryvdh) for registration/attendance sheets
+  - mPDF for advanced PDF features
+  - PDFtk for form filling
+- **Barcode/QR**: Milon/Barcode (DNS2D) for ticket QR codes
 
 ### Frontend
 - **UI Framework**: TailwindCSS v4.0
 - **JavaScript**: Vite 7.0 for asset compilation
-- **Components**: Livewire for dynamic interactions
+- **Components**: Livewire for dynamic interactions (public registration form)
 - **Icons**: Heroicons for consistent iconography
-
-### PDF & Document Processing
-- **PDF Generation**: DomPDF (Barryvdh)
-- **Barcode/QR**: Milon/Barcode (DNS2D) for ticket QR codes
+- **Admin UI**: Filament components and widgets
 
 ### Development Tools
 - **Testing**: PHPUnit with custom test suites
 - **Code Style**: Laravel Pint for formatting
 - **Package Management**: Composer and npm
+- **Logging**: Laravel Pail for real-time log viewing
 
 ## 📁 Project Structure
 
 ```
 app/
-├── Models/                 # Eloquent models
-│   ├── Seminar.php         # Seminar management
-│   ├── Attendee.php        # Registration data (user_id links to User)
-│   ├── AttendeeProfile.php # Universal profile for registered attendees
-│   ├── SeminarDay.php      # Multi-day tracking
-│   ├── AttendeeCheckIn.php # Attendance records
-│   └── School.php          # School/office reference
-├── Services/               # Business logic services
-│   ├── SignatureSecurityService.php
-│   ├── RegistrationSheetPdfService.php
-│   ├── AttendanceSheetPdfService.php
-│   ├── AttendanceSqlParser.php    # SQL dump parser for seeding
-│   ├── AnalyticsPdfService.php
-│   ├── AnalyticsCsvService.php
-│   └── SeminarAnalyticsService.php
 ├── Filament/
-│   ├── Admin/              # Admin panel (seminars, check-in/out, users)
-│   └── Attendee/           # Attendee panel (dashboard, profile, seminar history)
-├── Livewire/               # Public registration (RegisterAttendee)
-└── Http/Controllers/      # HTTP controllers
+│   ├── Admin/                    # Admin panel resources and pages
+│   │   ├── Pages/
+│   │   │   ├── CheckInAttendee.php      # QR scanner check-in page
+│   │   │   ├── CheckOutAttendee.php    # QR scanner check-out page
+│   │   │   └── Auth/
+│   │   │       └── AdminLogin.php      # Custom admin login
+│   │   ├── Resources/
+│   │   │   ├── SeminarResource.php     # Seminar CRUD
+│   │   │   ├── UserResource.php        # User management
+│   │   │   ├── SchoolResource.php      # School management
+│   │   │   ├── AnalyticsResource.php   # Analytics dashboard
+│   │   │   └── ArchivedSeminarResource.php
+│   │   └── Widgets/
+│   │       └── SeminarStatsWidget.php
+│   └── Attendee/                 # Attendee panel pages
+│       ├── Pages/
+│       │   ├── Dashboard.php           # Attendee dashboard
+│       │   ├── UniversalQR.php         # Universal QR display
+│       │   ├── SeminarHistory.php      # Seminar history table
+│       │   ├── EditProfile.php         # Profile editor
+│       │   ├── ViewProfile.php         # Profile viewer
+│       │   └── Auth/
+│       │       ├── AttendeeLogin.php   # Custom attendee login
+│       │       └── AttendeeEditProfile.php
+│       └── Widgets/
+│           ├── UniversalQRWidget.php   # Dashboard QR widget
+│           └── AttendeeStatsWidget.php # Seminars attended count
+├── Http/
+│   └── Controllers/
+│       └── RegistrationDetailsController.php  # PDF preview/download
+├── Livewire/
+│   └── RegisterAttendee.php     # Public registration form (multi-step)
+├── Models/                       # Eloquent models
+│   ├── User.php                  # Authentication (email, password, role)
+│   ├── Attendee.php              # Registration data (user_id links to User)
+│   ├── AttendeeProfile.php       # Universal profile for registered attendees
+│   ├── Seminar.php               # Seminar management
+│   ├── SeminarDay.php            # Multi-day tracking
+│   ├── AttendeeCheckIn.php       # Attendance records (per day)
+│   ├── School.php                # School/office reference
+│   └── SurveyLinkClick.php       # Survey click tracking
+├── Providers/
+│   └── Filament/
+│       ├── AdminPanelProvider.php    # Admin panel configuration
+│       └── AttendeePanelProvider.php # Attendee panel configuration
+└── Services/                    # Business logic services
+    ├── SignatureSecurityService.php      # Signature processing & validation
+    ├── RegistrationSheetPdfService.php   # Registration sheet PDF
+    ├── MpdfRegistrationSheetService.php # mPDF-based registration sheet
+    ├── AttendanceSheetPdfService.php     # Attendance sheet PDF
+    ├── AttendanceCsvService.php         # CSV export
+    ├── AnalyticsPdfService.php           # Analytics PDF report
+    ├── AnalyticsCsvService.php           # Analytics CSV export
+    ├── SeminarAnalyticsService.php       # Analytics calculations
+    ├── SeminarQrCodeService.php         # Seminar registration QR
+    ├── RegistrationDetailsPdfService.php # Registration details PDF
+    ├── AttendanceSqlParser.php          # SQL dump parser for seeding
+    └── PdfFormFillingService.php        # PDF form filling
+
+config/
+├── filament.php                 # Filament panel configuration
+├── auth.php                     # Authentication guards
+├── database.php                 # Database connections
+├── mail.php                     # Email configuration
+├── queue.php                    # Queue configuration
+└── filesystems.php              # File storage configuration
+
+database/
+├── migrations/                  # Database migrations (see key migrations)
+│   ├── 0001_01_01_000000_create_users_table.php
+│   ├── 2026_01_22_061436_create_seminars_table.php
+│   ├── 2026_01_22_061439_create_attendees_table.php
+│   ├── 2026_02_02_093746_create_seminar_days_table.php
+│   ├── 2026_02_02_093750_create_attendee_check_ins_table.php
+│   ├── 2026_02_20_103836_create_schools_table.php
+│   ├── 2026_02_20_103843_add_school_fields_to_attendees_table.php
+│   ├── 2026_02_21_100000_add_role_to_users_table.php
+│   ├── 2026_02_21_100001_create_attendee_profiles_table.php
+│   └── 2026_02_21_100002_add_user_id_to_attendees_table.php
+└── seeders/
+    ├── DatabaseSeeder.php       # Main seeder
+    ├── SchoolSeeder.php         # School reference data
+    ├── SeminarSeeder.php        # Sample seminars
+    ├── SeminarDataSeeder.php    # Seminars + MANCOM attendees
+    ├── AttendeeSeeder.php       # Sample attendees
+    ├── AnalyticsTestSeminarSeeder.php   # Test data for analytics
+    ├── EnsureSeminarDaysSeeder.php     # Ensure Day 1 records exist
+    └── TestUserSeeder.php       # Test users (admin@test.local, attendee@test.local)
+
+resources/
+├── views/
+│   ├── welcome.blade.php        # Landing page
+│   ├── livewire/
+│   │   └── register-attendee.blade.php  # Registration form
+│   ├── registration-success.blade.php   # Success page with QR
+│   ├── pdf/                     # PDF templates
+│   │   ├── registration-details.blade.php
+│   │   └── ticket-pdf.blade.php
+│   └── filament/                # Filament views
+│       ├── admin/               # Admin panel views
+│       └── attendee/            # Attendee panel views
+
+routes/
+└── web.php                      # Application routes
+    ├── /                        # Landing page
+    ├── /register/{slug}         # Public registration
+    ├── /survey/{slug}            # Survey redirect with tracking
+    ├── /registration/success/{ticket_hash}  # Success page
+    ├── /admin/*                 # Admin panel (Filament)
+    └── /attendee/*              # Attendee panel (Filament)
 ```
+
+## 🗄️ Database Models & Relationships
+
+### Core Models
+
+**User** (`users` table)
+- `id`, `name`, `email`, `password`, `role` (`admin` or `attendee`)
+- Relationships:
+  - `hasOne(AttendeeProfile)` – Universal profile for attendees
+  - `hasMany(Attendee)` – Seminar registrations
+
+**AttendeeProfile** (`attendee_profiles` table)
+- `id`, `user_id` (unique), `universal_qr_hash` (16-char, unique)
+- Profile fields: `personnel_type`, `first_name`, `middle_name`, `last_name`, `suffix`, `sex`, `school_id`, `school_office_agency`, `mobile_phone`, `position`, `prc_license_no`, `prc_license_expiry`, signature fields
+- Relationships:
+  - `belongsTo(User)` – Linked user account
+  - `belongsTo(School)` – Optional school reference
+- Methods:
+  - `isComplete()` – Checks if profile has all required fields + signature
+  - `findByUniversalQrHash($hash)` – Static lookup for check-in
+
+**Attendee** (`attendees` table)
+- `id`, `seminar_id`, `user_id` (nullable), `email`, `ticket_hash` (16-char, unique)
+- Registration fields: same as `AttendeeProfile` plus `name` (computed)
+- Relationships:
+  - `belongsTo(Seminar)` – Seminar registration
+  - `belongsTo(User)` – Optional linked user account
+  - `belongsTo(School)` – Optional school reference
+  - `hasMany(AttendeeCheckIn)` – Attendance records per day
+
+**Seminar** (`seminars` table)
+- `id`, `title`, `slug` (8-char, unique), `date`, `is_open`, `capacity`, `venue`, `topic`, `time`, `room`, `survey_form_url`, `is_multi_day`, `is_ended`, `deleted_at` (soft deletes)
+- Relationships:
+  - `hasMany(Attendee)` – Registered attendees
+  - `hasMany(SeminarDay)` – Multi-day schedule
+  - `hasMany(SurveyLinkClick)` – Survey click tracking
+
+**SeminarDay** (`seminar_days` table)
+- `id`, `seminar_id`, `day_number`, `date`, `start_time`, `venue`, `topic`, `room`
+- Relationships:
+  - `belongsTo(Seminar)` – Parent seminar
+  - `hasMany(AttendeeCheckIn)` – Check-ins for this day
+
+**AttendeeCheckIn** (`attendee_check_ins` table)
+- `id`, `attendee_id`, `seminar_day_id`, `checked_in_at`, `checked_out_at`
+- Relationships:
+  - `belongsTo(Attendee)` – Attendee record
+  - `belongsTo(SeminarDay)` – Specific day
+
+**School** (`schools` table)
+- `id`, `name`
+- Relationships:
+  - `hasMany(Attendee)` – Attendees from this school
+  - `hasMany(AttendeeProfile)` – Profiles linked to this school
+
+### Key Relationships
+
+```
+User (1) ──< (1) AttendeeProfile (universal profile)
+User (1) ──< (*) Attendee (seminar registrations)
+Seminar (1) ──< (*) Attendee
+Seminar (1) ──< (*) SeminarDay
+Attendee (1) ──< (*) AttendeeCheckIn
+SeminarDay (1) ──< (*) AttendeeCheckIn
+School (1) ──< (*) Attendee
+School (1) ──< (*) AttendeeProfile
+```
+
+## 👥 User Roles & Flows
+
+### Admin Role (`role = 'admin'`)
+- **Access**: `/admin` panel only
+- **Capabilities**:
+  - Create/edit/delete seminars
+  - Manage users (create admin/attendee accounts)
+  - Manage schools
+  - View all attendees and registrations
+  - Check-in/check-out attendees via QR scanner
+  - Generate PDF/CSV reports
+  - View analytics dashboards
+  - Archive seminars (soft delete)
+
+### Attendee Role (`role = 'attendee'`)
+- **Access**: `/attendee` panel only
+- **Capabilities**:
+  - View Universal QR code (when profile complete)
+  - Edit profile (name, contact, school, signature)
+  - View seminar history (seminars where `user_id` matches)
+  - View attendance stats
+  - Pre-register for seminars (via public form while logged in)
+  - Update email address
+
+**Registration Flow for Logged-in Attendees:**
+1. Visit `/register/{slug}` while logged in
+2. Form pre-fills with profile data (if available)
+3. Submit registration → `Attendee` created with `user_id` set
+4. Seminar appears in Seminar History
+5. Can use Universal QR for walk-in check-in
+
+**Walk-in Check-in Flow:**
+1. Attendee scans Universal QR at venue
+2. System looks up `AttendeeProfile` by `universal_qr_hash`
+3. If `Attendee` record doesn't exist for this seminar, creates one from profile
+4. Checks in attendee for current/selected day
+
+### Guest Users (No Account)
+- **Access**: Public registration form only
+- **Flow**:
+  1. Visit `/register/{slug}` (not logged in)
+  2. Complete multi-step registration form
+  3. Provide email (validated for uniqueness per seminar)
+  4. Draw signature
+  5. Receive ticket QR code (`ticket_hash`)
+  6. Check in using ticket QR at venue
+  7. No dashboard access (no account created)
+
+## 🔐 Profile Completion Gate & Universal QR
+
+The Universal QR code is only displayed when the `AttendeeProfile` is complete. The `isComplete()` method checks:
+
+1. **Name**: `first_name`, `middle_name`, `last_name` must all be filled
+2. **Contact**: `personnel_type`, `sex`, `mobile_phone`, `position` must be filled
+3. **School**: Either `school_id` is set OR `school_office_agency`/`school_other` is filled
+4. **PRC License**:
+   - If `prc_license_no` is provided, `prc_license_expiry` must also be provided
+   - If empty, considered valid (no license)
+5. **Signature**: `signature_image` or `signature_upload_path` must exist
+
+**UI Behavior:**
+- Universal QR widget/page shows completion instructions if incomplete
+- Link to Edit Profile page provided
+- QR code only renders when `isComplete()` returns `true`
+
+## 📧 Email Logic: User vs Attendee
+
+The system uses email differently in two contexts:
+
+### User Model (`users` table)
+- **Purpose**: Authentication and account management
+- **Usage**: Login credentials for `/admin` and `/attendee` panels
+- **Uniqueness**: Enforced at database level (unique constraint)
+- **Editable**: Attendees can update their email in Edit Profile
+- **Admin Creation**: Admins create users with email + password + role
+
+### Attendee Model (`attendees` table)
+- **Purpose**: Registration data for seminars
+- **Usage**: Contact information, uniqueness check per seminar
+- **Uniqueness**: Enforced per seminar (same email can register for different seminars)
+- **Validation**: Email format validation, uniqueness check in `RegisterAttendee` component
+- **Relationship**: When `user_id` is set, `Attendee.email` may differ from `User.email`
+
+**Key Points:**
+- A `User` account email is for login only
+- An `Attendee` email is for registration/contact
+- When creating `Attendee` from `AttendeeProfile` (walk-in), `User.email` is used
+- When logged-in attendee registers, `Attendee.email` comes from form (can differ from `User.email`)
 
 ## 🚀 Installation & Setup
 
 ### Prerequisites
 - PHP 8.2 or higher
 - Composer
-- Node.js and npm
-- SQLite (or other supported database)
+- Node.js 18+ and npm
+- SQLite (default) or MySQL/PostgreSQL
+- Web server (Apache/Nginx) or PHP built-in server
 
 ### Quick Start
+
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd sdo-seminar-management-system
 
-# Install dependencies
+# Install PHP dependencies
 composer install
+
+# Install Node dependencies
 npm install
 
 # Environment setup
 cp .env.example .env
 php artisan key:generate
 
-# Database setup
+# Configure database in .env
+# For SQLite (default):
+# DB_CONNECTION=sqlite
+# (database/database.sqlite will be created automatically)
+
+# For MySQL:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=your_database
+# DB_USERNAME=your_username
+# DB_PASSWORD=your_password
+
+# Run migrations
 php artisan migrate
-php artisan db:seed   # Optional: seed seminars, schools, sample data
+
+# Seed database (optional - adds sample data)
+php artisan db:seed
 
 # Build assets
 npm run build
 
 # Start development server
 composer run dev
+# This runs concurrently:
+# - PHP server (http://localhost:8000)
+# - Queue worker
+# - Laravel Pail (logs)
+# - Vite dev server (hot reload)
 ```
 
 ### Available Scripts
-- `composer run setup` - Complete project setup
-- `composer run dev` - Development server with hot reload
-- `composer run test` - Run test suite
+
+- `composer run setup` – Complete project setup (install, env, key, migrate, build)
+- `composer run dev` – Development server with hot reload (server + queue + logs + vite)
+- `composer run test` – Run PHPUnit test suite
+- `npm run build` – Build production assets
+- `npm run dev` – Start Vite dev server
+
+### Environment Configuration
+
+Key variables in `.env`:
+
+```env
+# Application
+APP_NAME="SDO Seminar Management System"
+APP_ENV=local
+APP_KEY=                    # Generated by php artisan key:generate
+APP_DEBUG=true
+APP_URL=http://localhost
+
+# Database
+DB_CONNECTION=sqlite        # or mysql, pgsql
+DB_DATABASE=database/database.sqlite  # for SQLite
+# DB_HOST=127.0.0.1         # for MySQL
+# DB_PORT=3306
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# Session
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+
+# Queue
+QUEUE_CONNECTION=database   # Uses database queue driver
+
+# Mail (for notifications - currently not used but configured)
+MAIL_MAILER=log             # Use 'smtp' for production
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+# Cache
+CACHE_STORE=database
+```
+
+### Database Seeding
+
+The seeder system includes:
+
+- **SchoolSeeder** – School/office reference data (alphabetical list)
+- **SeminarSeeder** – Sample seminars with multi-day support
+- **SeminarDataSeeder** – Real seminars + MANCOM attendees (from SQL dump)
+- **AttendeeSeeder** – Sample attendees (skips MANCOM and Division Workshop)
+- **EnsureSeminarDaysSeeder** – Ensures all seminars have Day 1 records
+- **AnalyticsTestSeminarSeeder** – Multi-day seminar with attendees and check-ins for analytics testing
+- **TestUserSeeder** – Test accounts:
+  - `admin@test.local` / `password` (admin role)
+  - `attendee@test.local` / `password` (attendee role)
+- **AttendanceSqlParser** – Parses `database/u266949284_sdoattendance.sql` for real attendee data (used by SeminarDataSeeder)
+
+Run all seeders:
+```bash
+php artisan db:seed
+```
+
+Run specific seeder:
+```bash
+php artisan db:seed --class=TestUserSeeder
+```
 
 ## 📚 Usage Documentation
 
 ### For Administrators
-1. Access admin panel at `/admin`
-2. Create and manage seminars through Filament interface
-3. Monitor registrations and attendance in real-time
-4. Export reports in PDF or CSV format
-5. Manage multi-day seminar schedules
+
+1. **Access Admin Panel**: Navigate to `/admin` and log in with admin credentials
+2. **Create Seminars**:
+   - Go to Seminars → Create
+   - Fill in title, date, venue, capacity (or mark as open)
+   - Enable multi-day if needed, add seminar days
+   - Copy registration URL (`/register/{slug}`) to share
+3. **Manage Users**:
+   - Create admin or attendee accounts (account fields only)
+   - For attendees, empty AttendeeProfile is auto-created
+   - Edit to fill in profile up to PRC license (signature added by attendee)
+4. **Check-in Attendees**:
+   - Go to Seminars → View → Check In
+   - Scan QR code (Universal QR or ticket hash)
+   - Select day for multi-day seminars
+   - Check out when attendee leaves
+5. **Generate Reports**:
+   - View Analytics for statistics
+   - Export Registration Sheet (PDF)
+   - Export Attendance Sheet (PDF)
+   - Export GNR Attendance Sheet (PDF)
+   - Export CSV for data analysis
+6. **Archive Seminars**: Move ended seminars to Archived Seminars
 
 ### For Attendees
 
-**Guest registration (no account):**
-1. Visit seminar registration URL (slug-based)
-2. Complete multi-step registration form
-3. Provide digital signature for consent
-4. Receive QR code ticket for check-in
-5. Check in/out at seminar venue
+**Guest Registration (No Account):**
+1. Visit seminar registration URL (`/register/{slug}`)
+2. Complete Step 1: Personal info, email, school
+3. Complete Step 2: Contact info, PRC license (if teaching), signature
+4. Receive QR code ticket on success page
+5. Check in/out at seminar venue using ticket QR
 
-**Registered attendees (with account):**
-1. Log in at `/attendee`
-2. View Universal QR Code (use for walk-in check-in at any seminar)
-3. Pre-register via public form (logged in) – seminars appear in Seminar History
-4. Or walk in – scan Universal QR at venue to auto-register and check in
-5. View Seminar History and attendance stats on dashboard
+**Registered Attendees (With Account):**
+1. **Login**: Navigate to `/attendee` and log in
+2. **Complete Profile** (required for Universal QR):
+   - Go to My Profile → Edit Profile
+   - Fill all fields (name, contact, school, PRC if teaching)
+   - Draw signature and capture
+   - Save profile
+3. **View Universal QR**:
+   - Dashboard widget or My QR Code page
+   - Show this QR when checking in at any seminar
+4. **Pre-register for Seminars**:
+   - Visit `/register/{slug}` while logged in
+   - Form pre-fills with profile data
+   - Submit → seminar appears in Seminar History
+5. **Walk-in Check-in**:
+   - Show Universal QR at venue
+   - System auto-registers and checks you in
+   - Seminar appears in History
+6. **View Seminar History**:
+   - See all attended seminars
+   - Click View to see check-in/check-out times per day
+7. **Update Profile**: Edit any profile fields or signature anytime
 
-## 🔧 Configuration
+## 🔧 Important Configuration
 
-### Environment Variables
-Key configuration options in `.env`:
-- Database connection settings
-- Mail configuration for notifications
-- File system settings for uploads
-- Application URL and timezone
+### Filament Panels
 
-### Seeding
-- **SeminarDataSeeder** – Seminars, MANCOM attendees, Division Workshop (from SQL dump)
-- **AttendanceSqlParser** – Parses `database/u266949284_sdoattendance.sql` for real attendee data
-- **SchoolSeeder** – School/office reference data
-- **AttendeeSeeder** – Sample attendees (skips MANCOM and Division Workshop)
+Two separate Filament panels are configured:
+
+**Admin Panel** (`/admin`):
+- Path: `admin`
+- Login: `App\Filament\Pages\Auth\AdminLogin`
+- Access: Users with `role = 'admin'`
+- Resources: Seminars, Users, Schools, Analytics, Archived Seminars
+- Pages: Dashboard, Check In, Check Out
+
+**Attendee Panel** (`/attendee`):
+- Path: `attendee`
+- Login: `App\Filament\Pages\Auth\AttendeeLogin`
+- Access: Users with `role = 'attendee'`
+- Pages: Dashboard, Universal QR, Seminar History, Edit Profile, View Profile
+- Widgets: Universal QR Widget, Attendee Stats Widget
+
+Panel access is controlled by `User::canAccessPanel()` method.
+
+### Rate Limiting
+
+Rate limiters are configured in `AppServiceProvider`:
+
+- **Registration** (`throttle:registration`): 15 requests per minute per IP
+- **Exports** (`throttle:exports`): 30 requests per minute per user (or IP if unauthenticated)
+
+### File Storage
+
+Signature images are stored in:
+- `storage/app/signatures/` (local disk)
+- Paths stored in `signature_upload_path` field
+- Base64 images stored in `signature_image` field
+
+### Queue Configuration
+
+- Driver: `database` (uses `jobs` table)
+- Run queue worker: `php artisan queue:work`
+- Or use `composer run dev` which includes queue listener
+
+### Session Configuration
+
+- Driver: `database` (uses `sessions` table)
+- Lifetime: 120 minutes
+- Encrypted: false (can enable in production)
 
 ## 🤝 Contributing
 
 Thank you for considering contributing to the SDO Seminar Management System! Please follow these guidelines:
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+4. Run tests (`composer run test`)
+5. Format code (`./vendor/bin/pint`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Submit a pull request
 
 ## 📄 License
 

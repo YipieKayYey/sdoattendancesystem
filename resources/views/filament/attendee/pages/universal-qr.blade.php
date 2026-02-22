@@ -39,7 +39,34 @@
                     {!! $this->getQrCodeHtml() !!}
                 </div>
                 <p class="mt-4 text-xs text-gray-600 dark:text-gray-300 font-mono">{{ $hash }}</p>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Save or screenshot this page for quick access.</p>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300 mb-6">Save or screenshot this page for quick access.</p>
+
+                {{-- PDF Preview & Download (like guest registration) --}}
+                <div class="bg-slate-100 dark:bg-blue-950/30 border-2 border-slate-300 dark:border-blue-900/60 rounded-lg p-4 max-w-lg mx-auto text-left">
+                    <p class="font-semibold text-slate-900 dark:text-blue-100 text-sm mb-3">Download Your QR Code</p>
+                    <p class="text-slate-700 dark:text-blue-200 text-xs mb-4">Get a PDF copy of your Universal QR code for your records.</p>
+                    <div class="flex flex-wrap gap-3">
+                        <x-filament::button
+                            tag="a"
+                            href="{{ route('attendee.universal-qr.preview') }}"
+                            target="_blank"
+                            color="primary"
+                            size="sm"
+                            icon="heroicon-o-eye"
+                        >
+                            Preview PDF
+                        </x-filament::button>
+                        <x-filament::button
+                            tag="a"
+                            href="{{ route('attendee.universal-qr.download') }}"
+                            color="success"
+                            size="sm"
+                            icon="heroicon-o-arrow-down-tray"
+                        >
+                            Download PDF
+                        </x-filament::button>
+                    </div>
+                </div>
             </div>
         </div>
     @endif

@@ -152,53 +152,41 @@ class ViewSeminar extends ViewRecord
                 Forms\Components\Section::make('Registration Information')
                     ->collapsible()
                     ->schema([
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\TextInput::make('registration_url')
-                                    ->label('Registration URL')
-                                    ->disabled()
-                                    ->columnSpanFull()
-                                    ->suffixAction(
-                                        Forms\Components\Actions\Action::make('copy')
-                                            ->icon('heroicon-o-clipboard')
-                                            ->action(function () {
-                                                $url = $this->record->registration_url;
-                                                $this->js("navigator.clipboard.writeText('{$url}')");
-                                                Notification::make()
-                                                    ->title('Registration URL copied!')
-                                                    ->body($url)
-                                                    ->success()
-                                                    ->send();
-                                            })
-                                    )
-                                    ->helperText('Click the clipboard icon to copy the registration URL.'),
-                                Forms\Components\ViewField::make('registration_qr')
-                                    ->label('Registration QR Code')
-                                    ->view('components.seminar-registration-qr')
-                                    ->viewData(['seminar' => $this->record]),
-                                Forms\Components\Placeholder::make('registered_count')
-                                    ->label('Registered Attendees')
-                                    ->content(fn ($record) => $record->attendees()->count() . ' / ' . ($record->is_open ? 'Unlimited' : $record->capacity)),
-                                Forms\Components\Placeholder::make('checked_in_count')
-                                    ->label('Checked In')
-                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_in_at')->count())
-                                    ->visible(fn ($record) => !$record->is_multi_day),
-                                Forms\Components\Placeholder::make('checked_out_count')
-                                    ->label('Checked Out')
-                                    ->content(fn ($record) => $record->attendees()->whereNotNull('checked_out_at')->count())
-                                    ->visible(fn ($record) => !$record->is_multi_day),
-                                Forms\Components\ViewField::make('attendance_by_day')
-                                    ->label('Attendance by Day')
-                                    ->view('components.attendance-by-day-table')
-                                    ->viewData(['seminar' => $this->record])
-                                    ->visible(fn ($record) => $record->is_multi_day && $record->days()->exists())
-                                    ->columnSpanFull()
-                                    ->extraAttributes(['class' => 'min-w-0']),
-                                Forms\Components\Placeholder::make('available_spots')
-                                    ->label('Available Spots')
-                                    ->content(fn ($record) => $record->is_open ? 'Unlimited' : max(0, $record->capacity - $record->attendees()->count()))
-                                    ->visible(fn ($record) => !$record->is_open),
-                            ]),
+                        Forms\Components\TextInput::make('registration_url')
+                            ->label('Registration URL')
+                            ->disabled()
+                            ->columnSpanFull()
+                            ->suffixAction(
+                                Forms\Components\Actions\Action::make('copy')
+                                    ->icon('heroicon-o-clipboard')
+                                    ->action(function () {
+                                        $url = $this->record->registration_url;
+                                        $this->js("navigator.clipboard.writeText('{$url}')");
+                                        Notification::make()
+                                            ->title('Registration URL copied!')
+                                            ->body($url)
+                                            ->success()
+                                            ->send();
+                                    })
+                            )
+                            ->helperText('Click the clipboard icon to copy the registration URL.'),
+                        Forms\Components\ViewField::make('registration_qr')
+                            ->label('')
+                            ->view('components.seminar-registration-qr')
+                            ->viewData(['seminar' => $this->record])
+                            ->columnSpanFull(),
+                        Forms\Components\ViewField::make('attendance_by_day')
+                            ->label('Attendance by Day')
+                            ->view('components.attendance-by-day-table')
+                            ->viewData(['seminar' => $this->record])
+                            ->visible(fn ($record) => $record->is_multi_day && $record->days()->exists())
+                            ->columnSpanFull()
+                            ->extraAttributes(['class' => 'min-w-0']),
+                        Forms\Components\ViewField::make('counters_and_live_link')
+                            ->label('')
+                            ->view('components.seminar-registration-counters')
+                            ->viewData(['seminar' => $this->record])
+                            ->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Client Satisfaction Survey')

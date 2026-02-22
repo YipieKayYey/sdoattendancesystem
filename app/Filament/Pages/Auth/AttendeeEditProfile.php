@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages\Auth;
 
-use App\Filament\Attendee\Pages\EditProfile;
+use App\Filament\Attendee\Pages\ViewProfile;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -15,7 +15,7 @@ class AttendeeEditProfile extends \Filament\Pages\Auth\EditProfile
     public function mount(): void
     {
         if (auth()->user()->attendeeProfile) {
-            $this->redirect(EditProfile::getUrl());
+            $this->redirect(ViewProfile::getUrl());
             return;
         }
         parent::mount();
