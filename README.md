@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/Version-0.7-blue" alt="Version">
+    <img src="https://img.shields.io/badge/Version-0.8-blue" alt="Version">
     <img src="https://img.shields.io/badge/PHP-8.2%2B-blue" alt="PHP">
     <img src="https://img.shields.io/badge/Laravel-12.0-red" alt="Laravel">
     <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
@@ -18,6 +18,13 @@
 ## 📋 Overview
 
 The SDO Seminar Management System is a feature-rich web application designed to streamline seminar organization, registration, and attendance tracking for educational institutions. Built with modern web technologies, it provides a complete solution for managing both single-day and multi-day seminars with comprehensive reporting capabilities.
+
+### Recent Updates (v0.8)
+
+- **Universal QR Check-In** – Registered attendees use one QR for all seminars; walk-in scan auto-registers and checks in
+- **Attendee Panel** – Dashboard with Seminar History, Universal QR widget, and Seminars Attended stats
+- **Account Linking** – Logged-in attendees who pre-register get `user_id` set; seminars appear in History and stats
+- **Double Registration Prevention** – Logged-in attendees cannot register twice for the same seminar
 
 ## 🖼️ Application Preview
 
@@ -41,11 +48,15 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 - **Comprehensive attendee data collection** (personal info, position, school/agency)
 - **QR code-based ticketing system** with unique ticket hashes
 - **Registration capacity management** with real-time availability
+- **Guest and registered attendee support** – logged-in attendees get `user_id` linked for Seminar History and stats
+- **Double registration prevention** for logged-in attendees
 
 ### 📊 Attendance Tracking
 - **Check-in/check-out functionality** per seminar day
 - **Multi-day attendance tracking** with individual day records
 - **Real-time attendance monitoring** via Filament admin panel
+- **Universal QR check-in** – registered attendees can walk in and scan their Universal QR (auto-register + check-in)
+- **Dual lookup** – supports both Universal QR hash and per-seminar ticket hash
 - **Attendance analytics** and reporting
 
 ### 📈 Reporting & Analytics
@@ -55,6 +66,14 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 - **CSV export** for attendance data analysis
 - **Analytics dashboard** with multi-day statistics and PDF reports
 - **Signature images** in exports (no watermark overlay)
+
+### 👤 Attendee Panel
+- **Attendee dashboard** at `/attendee` with login
+- **Universal QR Code** – one QR for all seminars (show when checking in)
+- **Seminar History** – table of attended seminars with View modal (check-in/check-out times per day)
+- **Seminars Attended** stats widget
+- **Edit Profile** – update personal info and signature (used for walk-in check-ins)
+- **My Profile** – view profile details
 
 ### 🛡️ Security & Administration
 - **Filament v3.2 admin panel** for modern UI/UX
@@ -91,7 +110,8 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 app/
 ├── Models/                 # Eloquent models
 │   ├── Seminar.php         # Seminar management
-│   ├── Attendee.php        # Registration data
+│   ├── Attendee.php        # Registration data (user_id links to User)
+│   ├── AttendeeProfile.php # Universal profile for registered attendees
 │   ├── SeminarDay.php      # Multi-day tracking
 │   ├── AttendeeCheckIn.php # Attendance records
 │   └── School.php          # School/office reference
@@ -103,8 +123,10 @@ app/
 │   ├── AnalyticsPdfService.php
 │   ├── AnalyticsCsvService.php
 │   └── SeminarAnalyticsService.php
-├── Filament/Admin/         # Admin panel resources
-├── Livewire/              # Dynamic components
+├── Filament/
+│   ├── Admin/              # Admin panel (seminars, check-in/out, users)
+│   └── Attendee/           # Attendee panel (dashboard, profile, seminar history)
+├── Livewire/               # Public registration (RegisterAttendee)
 └── Http/Controllers/      # HTTP controllers
 ```
 
@@ -156,11 +178,20 @@ composer run dev
 5. Manage multi-day seminar schedules
 
 ### For Attendees
+
+**Guest registration (no account):**
 1. Visit seminar registration URL (slug-based)
 2. Complete multi-step registration form
 3. Provide digital signature for consent
 4. Receive QR code ticket for check-in
 5. Check in/out at seminar venue
+
+**Registered attendees (with account):**
+1. Log in at `/attendee`
+2. View Universal QR Code (use for walk-in check-in at any seminar)
+3. Pre-register via public form (logged in) – seminars appear in Seminar History
+4. Or walk in – scan Universal QR at venue to auto-register and check in
+5. View Seminar History and attendance stats on dashboard
 
 ## 🔧 Configuration
 

@@ -397,7 +397,23 @@
                             <p class="card-description">
                                 Manage Meetings & Seminars, Generate Reports and Monitor Participants logs.
                             </p>
-                            <a href="{{ route('filament.admin.auth.login') }}" class="btn btn-primary">Sign in to dashboard</a>
+                            <a href="{{ route('filament.admin.auth.login') }}" class="btn btn-primary">Sign in</a>
+                        </div>
+
+                        <!-- Attendee Login Card -->
+                        <div class="action-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <svg class="calendar-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="card-title">Attendee Login</h3>
+                            </div>
+                            <p class="card-description">
+                                Access your dashboard, view your universal QR code, and manage your profile.
+                            </p>
+                            <a href="{{ route('filament.attendee.auth.login') }}" class="btn btn-secondary">Sign in</a>
                         </div>
 
                         <!-- Upcoming Seminars Card -->

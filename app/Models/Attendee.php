@@ -9,6 +9,7 @@ class Attendee extends Model
 {
     protected $fillable = [
         'seminar_id',
+        'user_id',
         'name',
         'email',
         'position',
@@ -78,6 +79,11 @@ class Attendee extends Model
     public function seminar(): BelongsTo
     {
         return $this->belongsTo(Seminar::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function school(): BelongsTo

@@ -17,49 +17,26 @@ class SeminarDataSeeder extends Seeder
     public function run(): void
     {
         // Create admin users
+        $adminData = ['role' => 'admin', 'email_verified_at' => now()];
         User::updateOrCreate(
             ['email' => 'sdoadmin@deped.gov.ph'],
-            [
-                'name' => 'SDO Admin',
-                'password' => Hash::make('SDOBC2026'),
-                'email_verified_at' => now(),
-            ]
+            array_merge($adminData, ['name' => 'SDO Admin', 'password' => Hash::make('SDOBC2026')])
         );
-
         User::updateOrCreate(
             ['email' => 'sdoadmin2@deped.gov.ph'],
-            [
-                'name' => 'SDO Admin 2',
-                'password' => Hash::make('SDOBC2026'),
-                'email_verified_at' => now(),
-            ]
+            array_merge($adminData, ['name' => 'SDO Admin 2', 'password' => Hash::make('SDOBC2026')])
         );
-
         User::updateOrCreate(
             ['email' => 'sdoadmin3@deped.gov.ph'],
-            [
-                'name' => 'SDO Admin 3',
-                'password' => Hash::make('SDOBC2026'),
-                'email_verified_at' => now(),
-            ]
+            array_merge($adminData, ['name' => 'SDO Admin 3', 'password' => Hash::make('SDOBC2026')])
         );
-
         User::updateOrCreate(
             ['email' => 'sdoadmin4@deped.gov.ph'],
-            [
-                'name' => 'SDO Admin 4',
-                'password' => Hash::make('SDOBC2026'),
-                'email_verified_at' => now(),
-            ]
+            array_merge($adminData, ['name' => 'SDO Admin 4', 'password' => Hash::make('SDOBC2026')])
         );
-
         User::updateOrCreate(
             ['email' => 'sdoadmin5@deped.gov.ph'],
-            [
-                'name' => 'SDO Admin 5',
-                'password' => Hash::make('SDOBC2026'),
-                'email_verified_at' => now(),
-            ]
+            array_merge($adminData, ['name' => 'SDO Admin 5', 'password' => Hash::make('SDOBC2026')])
         );
 
         // Create seminars with their exact data

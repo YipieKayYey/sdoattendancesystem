@@ -4,8 +4,10 @@ namespace App\Filament\Admin\Pages;
 
 use App\Models\Attendee;
 use App\Models\AttendeeCheckIn;
+use App\Models\AttendeeProfile;
 use App\Models\Seminar;
 use App\Models\SeminarDay;
+use Illuminate\Support\Str;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -83,8 +85,8 @@ class CheckInAttendee extends Page implements HasForms
     {
         return [
             TextInput::make('ticketHash')
-                ->label('Ticket Hash / QR Code')
-                ->placeholder('Scan QR code or enter 16-character ticket hash')
+                ->label('Ticket Hash / Universal QR')
+                ->placeholder('Scan Universal QR or ticket hash (16 characters)')
                 ->maxLength(16)
                 ->autofocus()
                 ->live()
@@ -167,19 +169,58 @@ class CheckInAttendee extends Page implements HasForms
 
         if (strlen($ticketHash) !== 16) {
             Notification::make()
-                ->title('Invalid ticket hash')
-                ->body('Ticket hash must be exactly 16 characters.')
+                ->title('Invalid hash')
+                ->body('Hash must be exactly 16 characters.')
                 ->danger()
                 ->send();
             return;
         }
 
-        $attendee = Attendee::where('ticket_hash', $ticketHash)->first();
+        // Dual lookup: AttendeeProfile (universal QR) first, then Attendee (ticket hash)
+        $profile = AttendeeProfile::findByUniversalQrHash($ticketHash);
+        $attendee = null;
+
+        if ($profile) {
+            // User flow: resolve or create attendee for this seminar
+            if (!$this->seminar) {
+                Notification::make()
+                    ->title('Seminar required')
+                    ->body('Please access check-in from a seminar.')
+                    ->danger()
+                    ->send();
+                return;
+            }
+            $user = $profile->user;
+            if (!$user) {
+                Notification::make()
+                    ->title('Profile error')
+                    ->body('Attendee profile has no linked user.')
+                    ->danger()
+                    ->send();
+                return;
+            }
+            $attendee = Attendee::where('seminar_id', $this->seminar->id)
+                ->where('user_id', $user->id)
+                ->first();
+            if (!$attendee) {
+                if ($this->seminar->isFull()) {
+                    Notification::make()
+                        ->title('Seminar full')
+                        ->body('This seminar has reached capacity.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+                $attendee = $this->createAttendeeFromProfile($profile, $user);
+            }
+        } else {
+            $attendee = Attendee::where('ticket_hash', $ticketHash)->first();
+        }
 
         if (!$attendee) {
             Notification::make()
-                ->title('Attendee not found')
-                ->body('No attendee found with this ticket hash.')
+                ->title('Not found')
+                ->body('No attendee or profile found with this hash.')
                 ->danger()
                 ->send();
             return;
@@ -359,5 +400,43 @@ class CheckInAttendee extends Page implements HasForms
         } else {
             $this->redirect(\App\Filament\Admin\Resources\SeminarResource::getUrl('index'));
         }
+    }
+
+    protected function createAttendeeFromProfile(AttendeeProfile $profile, \App\Models\User $user): Attendee
+    {
+        $schoolOfficeAgency = $profile->school_office_agency ?? $profile->school_other;
+        if ($profile->school_id && $profile->school) {
+            $schoolOfficeAgency = $profile->school->name;
+        }
+
+        do {
+            $ticketHash = Str::random(16);
+        } while (Attendee::where('ticket_hash', $ticketHash)->exists());
+
+        return Attendee::create([
+            'seminar_id' => $this->seminar->id,
+            'user_id' => $user->id,
+            'ticket_hash' => $ticketHash,
+            'email' => $user->email,
+            'personnel_type' => $profile->personnel_type,
+            'first_name' => $profile->first_name,
+            'middle_name' => $profile->middle_name,
+            'last_name' => $profile->last_name,
+            'suffix' => $profile->suffix,
+            'sex' => $profile->sex,
+            'school_id' => $profile->school_id,
+            'school_other' => $profile->school_other,
+            'school_office_agency' => $schoolOfficeAgency,
+            'mobile_phone' => $profile->mobile_phone,
+            'position' => $profile->position,
+            'prc_license_no' => $profile->prc_license_no,
+            'prc_license_expiry' => $profile->prc_license_expiry,
+            'signature_image' => $profile->signature_image,
+            'signature_upload_path' => $profile->signature_upload_path,
+            'signature_hash' => $profile->signature_hash,
+            'signature_metadata' => $profile->signature_metadata,
+            'signature_consent' => $profile->signature_consent ?? false,
+            'signature_timestamp' => $profile->signature_timestamp,
+        ]);
     }
 }

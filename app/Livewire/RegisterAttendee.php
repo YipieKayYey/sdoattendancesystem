@@ -202,6 +202,17 @@ class RegisterAttendee extends Component
             return;
         }
 
+        // Prevent double registration for logged-in attendees
+        if (auth()->check() && auth()->user()->isAttendee()) {
+            $alreadyRegistered = Attendee::where('seminar_id', $this->seminar->id)
+                ->where('user_id', auth()->id())
+                ->exists();
+            if ($alreadyRegistered) {
+                $this->addError('registration', 'You are already registered for this seminar.');
+                return;
+            }
+        }
+
         // Generate unique 16-character ticket hash
         do {
             $ticketHash = Str::random(16);
@@ -231,6 +242,7 @@ class RegisterAttendee extends Component
 
         $attendee = Attendee::create([
             'seminar_id' => $this->seminar->id,
+            'user_id' => auth()->check() && auth()->user()->isAttendee() ? auth()->id() : null,
             'name' => trim($this->firstName . ' ' . ($this->middleName ? $this->middleName . ' ' : '') . $this->lastName . ($suffix ? ', ' . $suffix : '')), // Keep for backward compatibility
             'email' => $this->email,
             'position' => $this->position,

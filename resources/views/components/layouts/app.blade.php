@@ -13,5 +13,15 @@
 <body class="bg-gray-50">
     {{ $slot }}
     @livewireScripts
+    <script>
+        window.openPrivacyPolicy = function() {
+            var m = document.getElementById('privacyModal');
+            if (m) m.classList.remove('hidden');
+        };
+        window.closePrivacyPolicy = function() {
+            var m = document.getElementById('privacyModal');
+            if (m) m.classList.add('hidden');
+        };
+    </script>
 </body>
 </html>

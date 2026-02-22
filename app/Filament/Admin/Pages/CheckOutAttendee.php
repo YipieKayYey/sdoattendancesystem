@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Pages;
 
 use App\Models\Attendee;
 use App\Models\AttendeeCheckIn;
+use App\Models\AttendeeProfile;
 use App\Models\Seminar;
 use App\Models\SeminarDay;
 use Filament\Forms\Components\Select;
@@ -83,8 +84,8 @@ class CheckOutAttendee extends Page implements HasForms
     {
         return [
             TextInput::make('ticketHash')
-                ->label('Ticket Hash / QR Code')
-                ->placeholder('Scan QR code or enter 16-character ticket hash')
+                ->label('Ticket Hash / Universal QR')
+                ->placeholder('Scan Universal QR or ticket hash (16 characters)')
                 ->maxLength(16)
                 ->autofocus()
                 ->live()
@@ -167,19 +168,33 @@ class CheckOutAttendee extends Page implements HasForms
 
         if (strlen($ticketHash) !== 16) {
             Notification::make()
-                ->title('Invalid ticket hash')
-                ->body('Ticket hash must be exactly 16 characters.')
+                ->title('Invalid hash')
+                ->body('Hash must be exactly 16 characters.')
                 ->danger()
                 ->send();
             return;
         }
 
-        $attendee = Attendee::where('ticket_hash', $ticketHash)->first();
+        // Dual lookup: AttendeeProfile (universal QR) first, then Attendee (ticket hash)
+        $profile = AttendeeProfile::findByUniversalQrHash($ticketHash);
+        $attendee = null;
+
+        if ($profile) {
+            $user = $profile->user;
+            if ($user && $this->seminar) {
+                $attendee = Attendee::where('seminar_id', $this->seminar->id)
+                    ->where('user_id', $user->id)
+                    ->first();
+            }
+        }
+        if (!$attendee) {
+            $attendee = Attendee::where('ticket_hash', $ticketHash)->first();
+        }
 
         if (!$attendee) {
             Notification::make()
-                ->title('Attendee not found')
-                ->body('No attendee found with this ticket hash.')
+                ->title('Not found')
+                ->body('No attendee or profile found with this hash.')
                 ->danger()
                 ->send();
             return;

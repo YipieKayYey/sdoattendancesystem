@@ -18,9 +18,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Redirect to Filament admin login
+// Redirect /login to homepage; users choose Admin or Attendee from there
 Route::get('/login', function () {
-    return redirect()->route('filament.admin.auth.login');
+    return redirect('/');
 })->name('login');
 
 Route::get('/register/{slug}', RegisterAttendee::class)

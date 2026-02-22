@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attendee;
+use App\Models\AttendeeProfile;
 use App\Models\Seminar;
 
 class SignatureSecurityService
@@ -79,6 +80,23 @@ class SignatureSecurityService
     }
 
     /**
+     * Validate signature hash for AttendeeProfile
+     */
+    public function validateSignatureHashForProfile(AttendeeProfile $profile): bool
+    {
+        if (empty($profile->signature_hash) || empty($profile->signature_image)) {
+            return false;
+        }
+
+        $expectedHash = $this->generateSignatureHash(
+            $profile->signature_image,
+            $profile->signature_metadata ?? []
+        );
+
+        return hash_equals($profile->signature_hash, $expectedHash);
+    }
+
+    /**
      * Validate signature hash
      */
     public function validateSignatureHash(Attendee $attendee): bool
@@ -137,6 +155,89 @@ class SignatureSecurityService
             'signature_image' => $finalImage,
             'signature_hash' => $hash,
             'signature_metadata' => $metadata,
+            'signature_timestamp' => now(),
+        ];
+    }
+
+    /**
+     * Apply security watermark for AttendeeProfile (universal signature for AMS Seminars).
+     */
+    public function applyWatermarkForProfile(string $signatureImage, AttendeeProfile $profile): string
+    {
+        if (str_starts_with($signatureImage, 'data:image')) {
+            $signatureImage = $this->extractBase64Image($signatureImage);
+        }
+
+        $imageData = base64_decode($signatureImage);
+        $sourceImage = imagecreatefromstring($imageData);
+
+        if (!$sourceImage) {
+            throw new \Exception('Invalid image data');
+        }
+
+        $width = imagesx($sourceImage);
+        $height = imagesy($sourceImage);
+
+        $watermarkColor = imagecolorallocatealpha($sourceImage, 200, 0, 0, 12);
+        $lightWatermarkColor = imagecolorallocatealpha($sourceImage, 200, 0, 0, 12);
+
+        $watermarkTexts = [
+            'SDO SEMINAR SYSTEM - SIGNATURE',
+            'Valid for AMS Seminars',
+            'Date: ' . now()->format('Y-m-d H:i:s') . ' | Profile ID: ' . $profile->id,
+        ];
+
+        $fontSize = 2;
+        $yOffset = 10;
+        foreach ($watermarkTexts as $text) {
+            imagestring($sourceImage, $fontSize, 5, $yOffset, $text, $watermarkColor);
+            $yOffset += 15;
+        }
+
+        $diagonalText = 'SDO SEMINAR SYSTEM';
+        for ($i = 0; $i < 3; $i++) {
+            $x = ($width / 4) * ($i + 1);
+            $y = ($height / 4) * ($i + 1);
+            imagestring($sourceImage, 3, $x, $y, $diagonalText, $lightWatermarkColor);
+        }
+
+        $metadataText = 'Profile: ' . $profile->id;
+        imagestring($sourceImage, 1, 5, $height - 15, $metadataText, $watermarkColor);
+
+        ob_start();
+        imagepng($sourceImage);
+        $imageData = ob_get_contents();
+        ob_end_clean();
+        imagedestroy($sourceImage);
+
+        return base64_encode($imageData);
+    }
+
+    /**
+     * Process and secure signature for AttendeeProfile.
+     */
+    public function processSignatureForProfile(string $signatureData, AttendeeProfile $profile): array
+    {
+        if (str_starts_with($signatureData, 'data:image')) {
+            $signatureData = $this->extractBase64Image($signatureData);
+        }
+
+        $metadata = [
+            'profile_id' => $profile->id,
+            'form_type' => 'attendee_dashboard',
+            'timestamp' => now()->toIso8601String(),
+            'ip_address' => request()->ip(),
+        ];
+
+        $watermarkedImage = $this->applyWatermarkForProfile($signatureData, $profile);
+
+        $hash = $this->generateSignatureHash($watermarkedImage, $metadata);
+
+        return [
+            'signature_image' => $watermarkedImage,
+            'signature_hash' => $hash,
+            'signature_metadata' => $metadata,
+            'signature_consent' => true,
             'signature_timestamp' => now(),
         ];
     }

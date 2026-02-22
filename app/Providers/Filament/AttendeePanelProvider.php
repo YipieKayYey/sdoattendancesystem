@@ -6,12 +6,9 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
-use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -19,30 +16,26 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-class AdminPanelProvider extends PanelProvider
+class AttendeePanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->id('admin')
-            ->path('admin')
-            ->login(\App\Filament\Pages\Auth\AdminLogin::class)
+            ->id('attendee')
+            ->path('attendee')
+            ->login(\App\Filament\Pages\Auth\AttendeeLogin::class)
             ->brandLogo(asset('images/sdologo.png'))
-            ->brandLogoHeight('5rem')
+            ->brandLogoHeight('4rem')
             ->favicon(asset('favicon.ico'))
             ->sidebarCollapsibleOnDesktop()
-            ->colors([
-                'primary' => Color::Sky,
-            ])
-            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
-            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
+            ->colors(['primary' => Color::Sky])
+            ->discoverPages(in: app_path('Filament/Attendee/Pages'), for: 'App\\Filament\\Attendee\\Pages')
+            ->discoverWidgets(in: app_path('Filament/Attendee/Widgets'), for: 'App\\Filament\\Attendee\\Widgets')
             ->pages([
-                \Filament\Pages\Dashboard::class,
+                \App\Filament\Attendee\Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                \App\Filament\Admin\Widgets\SeminarStatsWidget::class,
+                \Filament\Widgets\AccountWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -55,12 +48,6 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->authMiddleware([
-                Authenticate::class,
-            ])
-            ->renderHook(
-                PanelsRenderHook::HEAD_END,
-                fn (): string => view('filament.admin.hooks.login-logo-css')->render(),
-            );
+            ->authMiddleware([Authenticate::class]);
     }
 }

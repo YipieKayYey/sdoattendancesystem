@@ -45,5 +45,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AnalyticsTestSeminarSeeder::class,
         ]);
+
+        // Test users for login: admin@test.local, attendee@test.local (password: password)
+        $this->call([
+            TestUserSeeder::class,
+        ]);
     }
 }

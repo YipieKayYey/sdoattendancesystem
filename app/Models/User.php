@@ -16,6 +16,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role',
     ];
 
     protected $hidden = [
@@ -31,11 +32,35 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    public function attendeeProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AttendeeProfile::class);
+    }
+
+    public function attendees(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Attendee::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isAttendee(): bool
+    {
+        return $this->role === 'attendee';
+    }
+
     /**
-     * This allows **all users** to access any Filament panel.
+     * Admin users → admin panel. Attendee users → attendee panel.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return match ($panel->getId()) {
+            'admin' => $this->isAdmin(),
+            'attendee' => $this->isAttendee(),
+            default => false,
+        };
     }
 }
