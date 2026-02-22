@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
+    <img src="https://img.shields.io/badge/Version-0.7-blue" alt="Version">
     <img src="https://img.shields.io/badge/PHP-8.2%2B-blue" alt="PHP">
     <img src="https://img.shields.io/badge/Laravel-12.0-red" alt="Laravel">
     <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
@@ -49,23 +49,24 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 - **Attendance analytics** and reporting
 
 ### 📈 Reporting & Analytics
-- **PDF report generation** for registration and attendance sheets
-- **CSV export functionality** for data analysis
-- **Analytics dashboard** with comprehensive statistics
-- **Multiple PDF engines** (DomPDF, mPDF, FPDF, FPDI) for flexibility
-- **Custom form filling** capabilities for official documents
+- **PDF report generation** for registration, attendance, and GNR attendance sheets
+- **CPD-compliant formats** (Registration Sheet, Attendance Sheet) with PRC branding
+- **GNR Attendance Sheet** for simplified name/sex/position/office/signature export
+- **CSV export** for attendance data analysis
+- **Analytics dashboard** with multi-day statistics and PDF reports
+- **Signature images** in exports (no watermark overlay)
 
 ### 🛡️ Security & Administration
 - **Filament v3.2 admin panel** for modern UI/UX
-- **Signature security service** with watermarking and validation
+- **Signature security service** with hash validation and consent tracking
 - **Role-based access control** with authentication middleware
-- **Data integrity protection** with soft deletes and audit trails
+- **School management** for attendee school/office assignment
 
 ## 🛠️ Technical Stack
 
 ### Backend
 - **Framework**: Laravel 12.0 with PHP 8.2+
-- **Database**: mysql with Eloquent ORM
+- **Database**: SQLite (default) or MySQL with Eloquent ORM
 - **Admin Panel**: Filament v3.2
 - **Queue System**: Laravel Queues for background processing
 
@@ -76,9 +77,8 @@ The SDO Seminar Management System is a feature-rich web application designed to 
 - **Icons**: Heroicons for consistent iconography
 
 ### PDF & Document Processing
-- **PDF Generation**: DomPDF, mPDF, FPDF, FPDI
-- **Form Filling**: PDFtk integration
-- **Barcode/QR**: Milon/Barcode library
+- **PDF Generation**: DomPDF (Barryvdh)
+- **Barcode/QR**: Milon/Barcode (DNS2D) for ticket QR codes
 
 ### Development Tools
 - **Testing**: PHPUnit with custom test suites
@@ -93,12 +93,16 @@ app/
 │   ├── Seminar.php         # Seminar management
 │   ├── Attendee.php        # Registration data
 │   ├── SeminarDay.php      # Multi-day tracking
-│   └── AttendeeCheckIn.php # Attendance records
+│   ├── AttendeeCheckIn.php # Attendance records
+│   └── School.php          # School/office reference
 ├── Services/               # Business logic services
 │   ├── SignatureSecurityService.php
 │   ├── RegistrationSheetPdfService.php
 │   ├── AttendanceSheetPdfService.php
-│   └── AnalyticsCsvService.php
+│   ├── AttendanceSqlParser.php    # SQL dump parser for seeding
+│   ├── AnalyticsPdfService.php
+│   ├── AnalyticsCsvService.php
+│   └── SeminarAnalyticsService.php
 ├── Filament/Admin/         # Admin panel resources
 ├── Livewire/              # Dynamic components
 └── Http/Controllers/      # HTTP controllers
@@ -128,6 +132,7 @@ php artisan key:generate
 
 # Database setup
 php artisan migrate
+php artisan db:seed   # Optional: seed seminars, schools, sample data
 
 # Build assets
 npm run build
@@ -166,11 +171,11 @@ Key configuration options in `.env`:
 - File system settings for uploads
 - Application URL and timezone
 
-### PDF Configuration
-Multiple PDF engines supported:
-- DomPDF for basic PDF generation
-- mPDF for advanced formatting
-- FPDF/FPDI for form filling
+### Seeding
+- **SeminarDataSeeder** – Seminars, MANCOM attendees, Division Workshop (from SQL dump)
+- **AttendanceSqlParser** – Parses `database/u266949284_sdoattendance.sql` for real attendee data
+- **SchoolSeeder** – School/office reference data
+- **AttendeeSeeder** – Sample attendees (skips MANCOM and Division Workshop)
 
 ## 🤝 Contributing
 
