@@ -92,6 +92,17 @@ class AttendeeProfile extends Model
         return !empty($this->signature_image) || !empty($this->signature_upload_path);
     }
 
+    public function isComplete(): bool
+    {
+        $hasName = filled($this->first_name) && filled($this->middle_name) && filled($this->last_name);
+        $hasContact = filled($this->personnel_type) && filled($this->sex) && filled($this->mobile_phone) && filled($this->position);
+        $hasSchool = $this->school_id !== null || filled($this->school_office_agency ?? $this->school_other);
+        $hasPrc = empty(trim((string) ($this->prc_license_no ?? '')))
+            || (filled($this->prc_license_no) && filled($this->prc_license_expiry));
+
+        return $hasName && $hasContact && $hasSchool && $hasPrc && $this->hasSignature();
+    }
+
     /**
      * Find profile by universal QR hash (for scanner lookup).
      */

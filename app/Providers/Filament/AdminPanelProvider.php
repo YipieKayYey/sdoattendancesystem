@@ -27,6 +27,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Pages\Auth\AdminLogin::class)
+            ->profile(\Filament\Pages\Auth\EditProfile::class)
+            ->revealablePasswords(true)
             ->brandLogo(asset('images/sdologo.png'))
             ->brandLogoHeight('5rem')
             ->favicon(asset('favicon.ico'))
@@ -58,6 +60,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->renderHook(PanelsRenderHook::STYLES_AFTER, fn (): string => view('filament.admin.hooks.panel-styles')->render())
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => view('filament.admin.hooks.login-logo-css')->render(),

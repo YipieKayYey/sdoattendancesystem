@@ -10,6 +10,10 @@ use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Actions;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Get;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rule;
 
 class EditProfile extends Page implements HasForms
 {
@@ -33,12 +37,14 @@ class EditProfile extends Page implements HasForms
 
     public function mount(): void
     {
-        $profile = auth()->user()->attendeeProfile;
+        $user = auth()->user();
+        $profile = $user->attendeeProfile;
         if (!$profile) {
             $this->redirect(route('filament.attendee.pages.dashboard'));
             return;
         }
         $this->form->fill([
+            'email' => $user->email ?? '',
             'personnel_type' => $profile->personnel_type,
             'first_name' => $profile->first_name,
             'middle_name' => $profile->middle_name,
@@ -49,7 +55,7 @@ class EditProfile extends Page implements HasForms
             'school_other' => $profile->school_other,
             'mobile_phone' => $profile->mobile_phone,
             'position' => $profile->position,
-            'no_prc_license' => empty(trim((string) ($profile->prc_license_no ?? ''))),
+            'no_prc_license' => false,
             'prc_license_no' => $profile->prc_license_no,
             'prc_license_expiry' => $profile->prc_license_expiry,
         ]);
@@ -59,6 +65,50 @@ class EditProfile extends Page implements HasForms
     {
         return $form
             ->schema([
+                Forms\Components\Section::make('Account')
+                    ->description('Your login email. You can change it if the admin registered a different one.')
+                    ->schema([
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->required()
+                            ->rule(Rule::unique('users', 'email')->ignore(auth()->id()))
+                            ->helperText('Change this if the admin registered a different email for you.'),
+                    ])
+                    ->columns(1),
+                Forms\Components\Section::make('Change Password')
+                    ->icon('heroicon-o-lock-closed')
+                    ->description('Leave blank to keep your current password.')
+                    ->schema([
+                        Forms\Components\TextInput::make('current_password')
+                            ->label('Current password')
+                            ->password()
+                            ->revealable()
+                            ->autocomplete('current-password')
+                            ->dehydrated(false)
+                            ->required(fn (Get $get): bool => filled($get('password')))
+                            ->rule('current_password:web')
+                            ->live(debounce: 500)
+                            ->helperText('Required when changing password.'),
+                        Forms\Components\TextInput::make('password')
+                            ->label('New password')
+                            ->password()
+                            ->revealable()
+                            ->rule(Password::default())
+                            ->autocomplete('new-password')
+                            ->dehydrated(fn ($state): bool => filled($state))
+                            ->live(debounce: 500)
+                            ->same('passwordConfirmation')
+                            ->required(fn (Get $get): bool => filled($get('current_password'))),
+                        Forms\Components\TextInput::make('passwordConfirmation')
+                            ->label('Confirm new password')
+                            ->password()
+                            ->revealable()
+                            ->required(fn (Get $get): bool => filled($get('password')))
+                            ->visible(fn (Get $get): bool => filled($get('password')))
+                            ->dehydrated(false),
+                    ])
+                    ->columns(1),
                 Forms\Components\Section::make('Personal Information')
                     ->schema([
                         Forms\Components\Select::make('personnel_type')
@@ -120,7 +170,16 @@ class EditProfile extends Page implements HasForms
     public function save(): void
     {
         $data = $this->form->getState();
-        $profile = auth()->user()->attendeeProfile;
+        $user = auth()->user();
+        $profile = $user->attendeeProfile;
+
+        if (filled($data['password'] ?? null)) {
+            $currentPassword = $this->data['current_password'] ?? '';
+            if (empty($currentPassword) || ! Hash::check($currentPassword, $user->password)) {
+                $this->addError('data.current_password', 'The current password is incorrect.');
+                return;
+            }
+        }
 
         $profileData = [
             'personnel_type' => $data['personnel_type'],
@@ -159,6 +218,21 @@ class EditProfile extends Page implements HasForms
         }
 
         $profile->update($profileData);
+
+        $userData = [];
+        if (isset($data['email']) && $data['email'] !== $user->email) {
+            $userData['email'] = $data['email'];
+        }
+        if (filled($data['password'] ?? null)) {
+            $userData['password'] = $data['password'];
+        }
+        if (!empty($userData)) {
+            $user->update($userData);
+        }
+
+        $this->data['current_password'] = null;
+        $this->data['password'] = null;
+        $this->data['passwordConfirmation'] = null;
 
         \Filament\Notifications\Notification::make()
             ->title('Profile updated')

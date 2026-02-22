@@ -5,7 +5,7 @@
         <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-white/5 dark:ring-white/10">
             <div class="p-6">
                 <h3 class="text-lg font-medium text-gray-950 dark:text-white">Signature</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-200">Draw your signature in the box below. Your signature will be used when you check in at seminars.</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Draw your signature in the box below. Your signature will be used when you check in at seminars.</p>
 
                 <div class="mt-4 flex items-start gap-2">
                     <input type="checkbox" id="profileSignatureConsent" wire:model="signatureConsent" class="mt-1 rounded border-gray-300 dark:border-white/20">

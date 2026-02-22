@@ -12,6 +12,9 @@ class EditUser extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
+        $data['created_at'] = $this->record->created_at;
+        $data['updated_at'] = $this->record->updated_at;
+
         $profile = $this->record->attendeeProfile;
         if ($profile) {
             $data['personnel_type'] = $profile->personnel_type;
@@ -27,6 +30,7 @@ class EditUser extends EditRecord
             $data['prc_license_no'] = $profile->prc_license_no;
             $data['prc_license_expiry'] = $profile->prc_license_expiry;
         }
+
         return $data;
     }
 
@@ -43,9 +47,7 @@ class EditUser extends EditRecord
         if ($profile) {
             $profile->update($profileData);
         } else {
-            AttendeeProfile::create(array_merge($profileData, [
-                'user_id' => $this->record->id,
-            ]));
+            AttendeeProfile::create(array_merge($profileData, ['user_id' => $this->record->id]));
         }
     }
 

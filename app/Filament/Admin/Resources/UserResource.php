@@ -40,6 +40,7 @@ class UserResource extends Resource
                             ->maxLength(255),
                         Forms\Components\TextInput::make('password')
                             ->password()
+                            ->revealable()
                             ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->maxLength(255),
@@ -48,14 +49,38 @@ class UserResource extends Resource
                             ->required()
                             ->default('attendee')
                             ->live(),
+                        Forms\Components\DateTimePicker::make('created_at')
+                            ->label('Account created at')
+                            ->disabled()
+                            ->displayFormat('M j, Y g:i A')
+                            ->visible(fn ($livewire) => optional($livewire->record)->exists),
+                        Forms\Components\DateTimePicker::make('updated_at')
+                            ->label('Last updated at')
+                            ->disabled()
+                            ->displayFormat('M j, Y g:i A')
+                            ->visible(fn ($livewire) => optional($livewire->record)->exists),
                     ])
                     ->columns(2),
 
                 Forms\Components\Section::make('Attendee Profile')
-                    ->description('Profile for division personnel. Signature is added by the attendee in their dashboard.')
+                    ->description('Admin can edit up to PRC license. Signature is added by the attendee in their dashboard.')
                     ->schema(static::getProfileFormSchema())
-                    ->visible(fn (Forms\Get $get) => $get('role') === 'attendee')
+                    ->visible(fn ($livewire) => optional($livewire->record)->exists && $livewire->record?->role === 'attendee')
                     ->columns(2),
+
+                Forms\Components\Section::make('Attendee Signature')
+                    ->description('Read-only. Shown only when the attendee has provided their signature in their dashboard.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('signature_display')
+                            ->label('')
+                            ->content(function (?\Illuminate\Database\Eloquent\Model $record): \Illuminate\Contracts\Support\Htmlable {
+                                $profile = $record?->attendeeProfile ?? null;
+                                return new \Illuminate\Support\HtmlString(
+                                    view('filament.admin.components.attendee-signature-display', ['profile' => $profile])->render()
+                                );
+                            }),
+                    ])
+                    ->visible(fn ($livewire) => optional($livewire->record)->exists && $livewire->record?->role === 'attendee'),
             ]);
     }
 
@@ -64,38 +89,17 @@ class UserResource extends Resource
         return [
             Forms\Components\Select::make('personnel_type')
                 ->label('Personnel Type')
-                ->options(['teaching' => 'Teaching', 'non_teaching' => 'Non-Teaching'])
-                ->required(),
-            Forms\Components\TextInput::make('first_name')
-                ->label('First Name')
-                ->maxLength(255),
-            Forms\Components\TextInput::make('middle_name')
-                ->label('Middle Name')
-                ->maxLength(255),
-            Forms\Components\TextInput::make('last_name')
-                ->label('Last Name')
-                ->maxLength(255),
-            Forms\Components\TextInput::make('suffix')
-                ->label('Suffix (Jr., Sr., III, etc.)')
-                ->maxLength(50)
-                ->placeholder('Leave blank if none'),
-            Forms\Components\Select::make('sex')
-                ->label('Sex')
-                ->options(['male' => 'Male', 'female' => 'Female']),
-            Forms\Components\TextInput::make('mobile_phone')
-                ->label('Mobile Phone')
-                ->tel()
-                ->maxLength(20),
-            Forms\Components\TextInput::make('position')
-                ->label('Position')
-                ->maxLength(255),
+                ->options(['teaching' => 'Teaching', 'non_teaching' => 'Non-Teaching']),
+            Forms\Components\TextInput::make('first_name')->label('First Name')->maxLength(255),
+            Forms\Components\TextInput::make('middle_name')->label('Middle Name')->maxLength(255),
+            Forms\Components\TextInput::make('last_name')->label('Last Name')->maxLength(255),
+            Forms\Components\TextInput::make('suffix')->label('Suffix (Jr., Sr., III, etc.)')->maxLength(50)->placeholder('Leave blank if none'),
+            Forms\Components\Select::make('sex')->label('Sex')->options(['male' => 'Male', 'female' => 'Female']),
+            Forms\Components\TextInput::make('mobile_phone')->label('Mobile Phone')->tel()->maxLength(20),
+            Forms\Components\TextInput::make('position')->label('Position')->maxLength(255),
             Forms\Components\Select::make('school_id')
                 ->label('School/Office/Agency')
-                ->options(function () {
-                    $schools = School::orderBy('name')->pluck('name', 'id')->all();
-                    $schools['other'] = 'Others (please specify)';
-                    return $schools;
-                })
+                ->options(fn () => School::orderBy('name')->pluck('name', 'id')->all() + ['other' => 'Others (please specify)'])
                 ->searchable()
                 ->live()
                 ->afterStateUpdated(function (Forms\Set $set, $state) {
@@ -109,11 +113,8 @@ class UserResource extends Resource
                 ->required(fn (Forms\Get $get) => $get('school_id') === 'other')
                 ->maxLength(255)
                 ->placeholder('Enter if not in the list'),
-            Forms\Components\TextInput::make('prc_license_no')
-                ->label('PRC License No.')
-                ->maxLength(255),
-            Forms\Components\DatePicker::make('prc_license_expiry')
-                ->label('PRC Expiry'),
+            Forms\Components\TextInput::make('prc_license_no')->label('PRC License No.')->maxLength(255),
+            Forms\Components\DatePicker::make('prc_license_expiry')->label('PRC Expiry'),
         ];
     }
 
@@ -148,6 +149,7 @@ class UserResource extends Resource
                     ->options(['admin' => 'Admin', 'attendee' => 'Attendee']),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -162,6 +164,7 @@ class UserResource extends Resource
         return [
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
+            'view' => Pages\ViewUser::route('/{record}'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }

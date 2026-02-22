@@ -2,6 +2,7 @@
 
 namespace App\Filament\Attendee\Pages;
 
+use App\Models\AttendeeProfile;
 use Filament\Pages\Page;
 use Milon\Barcode\DNS2D;
 
@@ -15,9 +16,14 @@ class UniversalQR extends Page
 
     protected static string $view = 'filament.attendee.pages.universal-qr';
 
+    public function getProfile(): ?AttendeeProfile
+    {
+        return auth()->user()->attendeeProfile;
+    }
+
     public function getUniversalQrHash(): ?string
     {
-        return auth()->user()->attendeeProfile?->universal_qr_hash;
+        return $this->getProfile()?->universal_qr_hash;
     }
 
     public function getQrCodeHtml(): string

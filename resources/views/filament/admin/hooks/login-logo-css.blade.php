@@ -1,4 +1,4 @@
-@if(request()->routeIs('filament.admin.auth.login'))
+@if(request()->routeIs('filament.admin.auth.login') || request()->routeIs('filament.attendee.auth.login'))
 <style>
     /* Enlarge logo on login page only */
     .fi-simple-main-ctn .fi-simple-brand,
